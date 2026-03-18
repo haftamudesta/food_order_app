@@ -1,10 +1,37 @@
-//start the server 
+// Start the server
+const app = require("./app");
+const connectDB = require("./DBConnection");
+const dotenv = require("dotenv");
 
-const app=require("./app")
+// Load environment variables
+dotenv.config({ path: "./config/config.env" });
 
-const dotenv=require("dotenv")
-dotenv.config({path:"./config/config.env"})
+const startServer = async () => {
+  try {
+    await connectDB();
 
-const server=app.listen(process.env.PORT,()=>{
-    console.log(`Server is runing on port:${process.env.PORT}`)
-})
+    const server = app.listen(process.env.PORT, () => {
+      console.log(`✅ Server is running on port: ${process.env.PORT}`);
+    });
+
+    // Handle server errors
+    server.on('error', (error) => {
+      console.error('Server error:', error.message);
+      process.exit(1);
+    });
+
+  } catch (error) {
+    console.error('Failed to start server:', error.message);
+    process.exit(1);
+  }
+};
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error('❌ Unhandled Rejection:', err.message);
+  server.close(() => {
+    process.exit(1);
+  });
+});
+
+startServer();
