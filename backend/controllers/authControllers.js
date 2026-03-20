@@ -1,18 +1,17 @@
 const User=require("../models/user");
 const jwt=require("jsonwebtoken");
+const sendToken=require("../utils/SendToken")
 const catchAsycErrors=require("../middleware/catchAsycErrors") 
 const AppError=require("../utils/errorHandler")
 
-exports.signUp=catchAsycErrors(async(req,res)=>{
-        const { name, email, phone, password,confirmPassword } = req.body;
+exports.signUp=catchAsycErrors(async(req,res,next)=>{
+        const { name, email, phone, password,confirmPassword,role} = req.body;
 
         if (!name || !email || !phone || !password || !confirmPassword) {
         return next(new AppError("Please provide all required fields", 400));
     }
 
-        const existingUser = await User.findOne({ 
-            $or: [{ email }, { phone }] 
-        });
+        const existingUser = await User.findOne({email });
 
         if (existingUser) {
             return next(new AppError(`User already exists with this ${existingUser.email}`, 400));
@@ -21,7 +20,9 @@ exports.signUp=catchAsycErrors(async(req,res)=>{
             name,
             email,
             phone,
-            password
+            password,
+            role,
+            confirmPassword
         });
 
         // Send token via cookie
