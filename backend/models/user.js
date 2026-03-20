@@ -75,8 +75,8 @@ userSchema.pre('save', async function() {
     this.password = await bcrypt.hash(this.password, 12);
 });
 // Instance method to check password
-userSchema.methods.comparePassword = async function(candidatePassword, userPassword) {
-    return await bcrypt.compare(candidatePassword, userPassword);
+userSchema.methods.comparePassword = async function(candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
 };
 
 userSchema.methods.getJWTToken = function() {
