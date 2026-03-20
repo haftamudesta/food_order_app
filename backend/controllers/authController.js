@@ -1,9 +1,9 @@
 const User=require("../models/user");
 const jwt=require("jsonwebtoken");
-const catchAsychErrors=require("../middleware/catchAsychErrors") 
+const catchAsycErrors=require("../middleware/catchAsycErrors") 
 const AppError=require("../utils/errorHandler")
 
-exports.signUp=catchAsychErrors(async(req,res)=>{
+exports.signUp=catchAsycErrors(async(req,res)=>{
         const { name, email, phone, password,confirmPassword } = req.body;
 
         if (!name || !email || !phone || !password || !confirmPassword) {
@@ -29,7 +29,7 @@ exports.signUp=catchAsychErrors(async(req,res)=>{
     
 })
 
-exports.login = catchAsychErrors(async (req, res, next) => {
+exports.login = catchAsycErrors(async (req, res, next) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -50,3 +50,16 @@ exports.login = catchAsychErrors(async (req, res, next) => {
     sendToken(user, 200, res);
 });
 
+exports.logout = catchAsycErrors(async (req, res, next) => {
+    res.cookie("jwt", null, {
+        expires: new Date(Date.now()),
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "development",
+        sameSite: "lax"
+    });
+
+    res.status(200).json({
+        success: true,
+        message: "Logged out successfully"
+    });
+});
