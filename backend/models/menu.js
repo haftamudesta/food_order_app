@@ -111,7 +111,7 @@ const menuItemSchema = new mongoose.Schema({
   discount: {
     type: Number,
     min: 0,
-    max: 100,
+    max: 200,
     help: 'Discount percentage'
   },
   discountStartDate: Date,
@@ -168,8 +168,6 @@ menuItemSchema.pre('save', function(next) {
   
   next();
 });
-
-
 
 // Virtual for discounted price
 menuItemSchema.virtual('discountedPrice').get(function() {
