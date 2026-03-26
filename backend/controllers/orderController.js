@@ -18,3 +18,27 @@ exports.getSingleOrder=catchAsyncErrors(async(req,res,next)=>{
         order,
     })
 })
+
+exports.myOrders=catchAsyncErrors(async(req,res,next)=>{
+    const userId=objectId(req.usr.id)
+    const order=await Order.find({user:userId}).populate("user","name email").populate("restaurant").exec()
+
+    res.status(200).json({
+        success:true,
+        order,
+    })
+})
+
+exports.getAllOrders=catchAsyncErrors(async(req,res,next)=>{
+    const orders=await Order.find()
+
+    let totalAmount=0
+    orders.forEach(order => {
+        totalAmount+=order.finalTotal
+    });
+
+    res.status(200).json({
+        success:true,
+        orders,
+    })
+})
