@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const Restaurant = require('./restaurant');
 
 const menuSchema = new mongoose.Schema({
   menu:[
