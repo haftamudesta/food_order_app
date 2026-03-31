@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { getRestaurants } from "../actions/restaurantAction";
 
-const initialStates={
+const initialState={
     restaurants:[],
     count:0,
     loading:false,
@@ -12,7 +12,7 @@ const initialStates={
 
 const restaurantSlice=createSlice({
     name:"restaurants",
-    initialStates,
+    initialState,
     reducers:{
         sortByRating:(state)=>{
             state.restaurants.sort((a,b)=>b.rating-a.rating)
