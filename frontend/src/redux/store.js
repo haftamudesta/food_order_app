@@ -6,4 +6,5 @@ const store=configureStore({
         restaurants:restaurantReducer,
     }
 })
+
 export default store
