@@ -1,5 +1,5 @@
 const User = require("../models/user");
-const catchAsyncErrors = require("../middleware/catchAsyncErrors");
+const catchAsyncErrors = require("../middleware/catchAsycErrors");
 const AppError = require("../utils/errorHandler");
 
 exports.getProfile = catchAsyncErrors(async (req, res, next) => {
