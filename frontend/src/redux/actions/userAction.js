@@ -75,3 +75,7 @@ export const updateProfile = (userData) => async (dispatch) => {
         dispatch(updateFail(error.response?.data?.message || "Update failed"));
     }
 };
+
+export const clearUserError = () => (dispatch) => {
+    dispatch(clearError());
+};
