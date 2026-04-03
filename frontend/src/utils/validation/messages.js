@@ -1,4 +1,3 @@
-// Centralized validation messages
 const validationMessages = {
     name: {
         required: 'Name is required',
@@ -15,11 +14,17 @@ const validationMessages = {
     },
     password: {
         required: 'Password is required',
-        minLength: 'Password must be at least 6 characters'
+        minLength: 'Password must be at least 6 characters',
+        invalid: 'Invalid email or password'
     },
     confirmPassword: {
         required: 'Please confirm your password',
         mismatch: 'Passwords do not match'
+    },
+    login: {
+        success: 'Login successful!',
+        failed: 'Invalid email or password',
+        networkError: 'Network error. Please try again'
     }
 };
 

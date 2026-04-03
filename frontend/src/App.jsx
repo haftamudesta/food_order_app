@@ -6,6 +6,7 @@ import { Home } from "./pages/Home";
 import SignUp from "./pages/user/SignUp";
 import { TermsService } from "./pages/TermsService";
 import { PrivacyPolicy } from "./pages/PrivacyPolicy";
+import SignIn from "./pages/user/SignIn";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
               exact
             />
             <Route path="/sign-up" element={<SignUp />} exact />
+            <Route path="/sign-in" element={<SignIn />} exact />
             <Route path="/terms" element={<TermsService />} exact />
             <Route path="/privacy" element={<PrivacyPolicy />} exact />
             <Route path="/footer" element={<Footer />} exact />

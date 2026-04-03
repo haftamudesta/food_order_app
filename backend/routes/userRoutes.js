@@ -7,7 +7,7 @@ const {
     updateProfile,
     getAllUsers,
     deleteUser
-} = require("../controllers/userController");
+} = require("../controllers/userControllers");
 
 // Protected routes (require authentication)
 router.use(protect); // All routes below require login

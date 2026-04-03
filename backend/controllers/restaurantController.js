@@ -1,8 +1,8 @@
 const Restaurant = require('../models/restaurant');
-const MenuItem = require('../models/MenuItem');
+const Menu = require('../models/menu');
 const Review = require('../models/Review');
-const AppError = require('../utils/appError');
-const catchAsync = require('../utils/catchAsync');
+const AppError = require('../utils/errorHandler');
+const catchAsync = require('../middleware/catchAsycErrors');
 const APIFeatures = require('../utils/apiFeatures');
 
 exports.createRestaurant = catchAsync(async (req, res, next) => {
@@ -140,7 +140,7 @@ exports.permanentDeleteRestaurant = catchAsync(async (req, res, next) => {
     return next(new AppError('You do not have permission to permanently delete this restaurant', 403));
   }
   
-  await MenuItem.deleteMany({ restaurant: restaurant._id });
+  await Menu.deleteMany({ restaurant: restaurant._id });
   await Review.deleteMany({ restaurant: restaurant._id });
   
   await restaurant.remove();
