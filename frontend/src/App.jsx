@@ -8,6 +8,7 @@ import { TermsService } from "./pages/TermsService";
 import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import SignIn from "./pages/user/SignIn";
 import ResetPassword from "./pages/user/ResetPassword";
+import Unauthorized from "./shared/components/fallback/Unauthorized";
 
 function App() {
   return (
@@ -27,9 +28,10 @@ function App() {
             <Route path="/forgot-password" element={<ResetPassword />} />
             <Route path="/terms" element={<TermsService />} exact />
             <Route path="/privacy" element={<PrivacyPolicy />} exact />
-            <Route path="/footer" element={<Footer />} exact />
+            <Route path="/unauthorized" element={<Unauthorized />} />
           </Routes>
         </div>
+        <Footer />
       </Router>
     </>
   );
