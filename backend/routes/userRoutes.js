@@ -19,3 +19,5 @@ router.put("/profile", updateProfile);
 router.use(authorizeRoles("admin")); // All routes below require admin role
 router.get("/get_all_users", getAllUsers);
 router.delete("/delete_user/:id", deleteUser);
+
+module.exports=router

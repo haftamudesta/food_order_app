@@ -1,10 +1,10 @@
 const User=require("../models/user");
 const jwt=require("jsonwebtoken");
 const sendToken=require("../utils/SendToken")
-const catchAsycErrors=require("../middleware/catchAsycErrors") 
+const catchAsyncErrors=require("../middleware/catchAsyncErrors") 
 const AppError=require("../utils/errorHandler")
 
-exports.signUp=catchAsycErrors(async(req,res,next)=>{
+exports.signUp=catchAsyncErrors(async(req,res,next)=>{
         const { name, email, phone, password,confirmPassword,role} = req.body;
 
         if (!name || !email || !phone || !password || !confirmPassword) {
@@ -30,7 +30,7 @@ exports.signUp=catchAsycErrors(async(req,res,next)=>{
     
 })
 
-exports.login = catchAsycErrors(async (req, res, next) => {
+exports.login = catchAsyncErrors(async (req, res, next) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -51,7 +51,7 @@ exports.login = catchAsycErrors(async (req, res, next) => {
     sendToken(user, 200, res);
 });
 
-exports.logout = catchAsycErrors(async (req, res, next) => {
+exports.logout = catchAsyncErrors(async (req, res, next) => {
     res.cookie("jwt", null, {
         expires: new Date(Date.now()),
         httpOnly: true,

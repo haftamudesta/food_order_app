@@ -17,4 +17,4 @@ router.patch('/:id', restaurantController.updateRestaurant);
 router.delete('/:id', restaurantController.deleteRestaurant);
 router.patch('/:id/toggle-status', restaurantController.toggleRestaurantStatus);
 
-module.ecports=router
+module.exports=router
