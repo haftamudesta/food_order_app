@@ -2,10 +2,10 @@ const Restaurant = require('../models/restaurant');
 const Menu = require('../models/menu');
 const Review = require('../models/Review');
 const AppError = require('../utils/errorHandler');
-const catchAsync = require('../middleware/catchAsycErrors');
+const catchAsyncErrors=require("../middleware/catchAsyncErrors")
 const APIFeatures = require('../utils/apiFeatures');
 
-exports.createRestaurant = catchAsync(async (req, res, next) => {
+exports.createRestaurant = catchAsyncErrors(async (req, res, next) => {
   req.body.owner = req.user.id;
   const existingRestaurant = await Restaurant.findOne({ name: req.body.name });
   if (existingRestaurant) {
@@ -22,7 +22,7 @@ exports.createRestaurant = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getAllRestaurants = catchAsync(async (req, res, next) => {
+exports.getAllRestaurants = catchAsyncErrors(async (req, res, next) => {
   const features = new APIFeatures(Restaurant.find({ isActive: true }), req.query)
     .filter()
     .sort()
@@ -43,7 +43,7 @@ exports.getAllRestaurants = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getRestaurant = catchAsync(async (req, res, next) => {
+exports.getRestaurant = catchAsyncErrors(async (req, res, next) => {
   let query;
   
   if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
@@ -76,7 +76,7 @@ exports.getRestaurant = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.updateRestaurant = catchAsync(async (req, res, next) => {
+exports.updateRestaurant = catchAsyncErrors(async (req, res, next) => {
   let restaurant = await Restaurant.findById(req.params.id);
   
   if (!restaurant) {
@@ -108,7 +108,7 @@ exports.updateRestaurant = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.deleteRestaurant = catchAsync(async (req, res, next) => {
+exports.deleteRestaurant = catchAsyncErrors(async (req, res, next) => {
   const restaurant = await Restaurant.findById(req.params.id);
   
   if (!restaurant) {
@@ -129,7 +129,7 @@ exports.deleteRestaurant = catchAsync(async (req, res, next) => {
 });
 
 
-exports.permanentDeleteRestaurant = catchAsync(async (req, res, next) => {
+exports.permanentDeleteRestaurant = catchAsyncErrors(async (req, res, next) => {
   const restaurant = await Restaurant.findById(req.params.id);
   
   if (!restaurant) {
@@ -151,7 +151,7 @@ exports.permanentDeleteRestaurant = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getMyRestaurants = catchAsync(async (req, res, next) => {
+exports.getMyRestaurants = catchAsyncErrors(async (req, res, next) => {
   const restaurants = await Restaurant.find({ 
     owner: req.user.id,
     isActive: true 
@@ -168,7 +168,7 @@ exports.getMyRestaurants = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.searchRestaurants = catchAsync(async (req, res, next) => {
+exports.searchRestaurants = catchAsyncErrors(async (req, res, next) => {
   const { query, cuisine, city, minRating, maxPrice } = req.query;
   
   const searchQuery = { isActive: true };
@@ -207,7 +207,7 @@ exports.searchRestaurants = catchAsync(async (req, res, next) => {
 });
 
 
-exports.getRestaurantStats = catchAsync(async (req, res, next) => {
+exports.getRestaurantStats = catchAsyncErrors(async (req, res, next) => {
   const restaurant = await Restaurant.findById(req.params.id);
   
   if (!restaurant) {
@@ -228,7 +228,7 @@ exports.getRestaurantStats = catchAsync(async (req, res, next) => {
   ]);
   
   // Get menu statistics
-  const menuStats = await MenuItem.aggregate([
+  const menuStats = await Menu.aggregate([
     { $match: { restaurant: restaurant._id } },
     { $group: {
       _id: '$category',
@@ -259,13 +259,13 @@ exports.getRestaurantStats = catchAsync(async (req, res, next) => {
         ratingDistribution
       },
       menuStats,
-      totalMenuItems: await MenuItem.countDocuments({ restaurant: restaurant._id })
+      totalMenuItems: await Menu.countDocuments({ restaurant: restaurant._id })
     }
   });
 });
 
 
-exports.setPrimaryImage = catchAsync(async (req, res, next) => {
+exports.setPrimaryImage = catchAsyncErrors(async (req, res, next) => {
   const restaurant = await Restaurant.findById(req.params.id);
   
   if (!restaurant) {
@@ -300,7 +300,7 @@ exports.setPrimaryImage = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.toggleRestaurantStatus = catchAsync(async (req, res, next) => {
+exports.toggleRestaurantStatus = catchAsyncErrors(async (req, res, next) => {
   const restaurant = await Restaurant.findById(req.params.id);
   
   if (!restaurant) {
@@ -324,7 +324,7 @@ exports.toggleRestaurantStatus = catchAsync(async (req, res, next) => {
 });
 
 
-exports.getOperatingHours = catchAsync(async (req, res, next) => {
+exports.getOperatingHours = catchAsyncErrors(async (req, res, next) => {
   const restaurant = await Restaurant.findById(req.params.id).select('operatingHours name');
   
   if (!restaurant) {
@@ -341,7 +341,7 @@ exports.getOperatingHours = catchAsync(async (req, res, next) => {
 });
 
 
-exports.checkIsOpen = catchAsync(async (req, res, next) => {
+exports.checkIsOpen = catchAsyncErrors(async (req, res, next) => {
   const restaurant = await Restaurant.findById(req.params.id);
   
   if (!restaurant) {
@@ -370,7 +370,7 @@ exports.checkIsOpen = catchAsync(async (req, res, next) => {
 });
 
 
-exports.getFeaturedRestaurants = catchAsync(async (req, res, next) => {
+exports.getFeaturedRestaurants = catchAsyncErrors(async (req, res, next) => {
   const restaurants = await Restaurant.find({ 
     isActive: true,
     isVerified: true,
