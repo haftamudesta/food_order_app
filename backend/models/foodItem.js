@@ -77,7 +77,7 @@ const foodItemSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  isNew: {
+  isNewOne: {
     type: Boolean,
     default: false
   },
