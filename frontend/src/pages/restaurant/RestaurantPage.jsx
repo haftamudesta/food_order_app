@@ -5,7 +5,7 @@ import {
   getRestaurantById,
   clearSelectedRestaurant,
   getRestaurantStats,
-} from "../redux/slices/restaurantSlice";
+} from "../../redux/slices/restaurantSlice";
 import {
   StarIcon,
   MapPinIcon,
@@ -20,11 +20,11 @@ import {
   HeartIcon,
 } from "@heroicons/react/24/solid";
 import { HeartIcon as HeartOutlineIcon } from "@heroicons/react/24/outline";
-import MenuSection from "../components/restaurant/MenuSection";
-import ReviewSection from "../components/restaurant/ReviewSection";
-import LoadingSpinner from "../components/ui/LoadingSpinner";
-import ErrorAlert from "../components/ui/ErrorAlert";
-import RestaurantInfoCard from "../components/restaurant/RestaurantInfoCard";
+import MenuSection from "./MenuSection";
+import ReviewSection from "./ReviewSection";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import ErrorAlert from "../../components/ui/ErrorAlert";
+import RestaurantInfoCard from "./RestaurantInfoCard";
 import OperatingHours from "../components/restaurant/OperatingHours";
 
 const SpoonIcon = () => (

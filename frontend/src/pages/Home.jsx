@@ -1,5 +1,5 @@
 import React from "react";
-import RestaurantPage from "./RestaurantPage";
+import RestaurantPage from "./restaurant/RestaurantPage";
 
 export const Home = () => {
   return (
