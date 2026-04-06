@@ -1,7 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axiosInstance from "@/lib/axios";
 
-
 export const getRestaurants=createAsyncThunk( "restaurants/getRestaurants",async(keyword=" ",{rejectWithValue})=>{
     try {
         const {data}=await axiosInstance.get(`/v1/restaurant?keyword=${keyword}`)
