@@ -16,17 +16,38 @@ import {
   WifiIcon,
   TruckIcon,
   ClipboardDocumentIcon,
-  SpoonIcon,
   BuildingOfficeIcon,
   HeartIcon,
 } from "@heroicons/react/24/solid";
 import { HeartIcon as HeartOutlineIcon } from "@heroicons/react/24/outline";
-// import MenuSection from "../components/restaurant/MenuSection";
-// import ReviewSection from "../components/restaurant/ReviewSection";
+import MenuSection from "../components/restaurant/MenuSection";
+import ReviewSection from "../components/restaurant/ReviewSection";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
-// import ErrorAlert from "../components/ui/ErrorAlert";
-// import RestaurantInfoCard from "../components/restaurant/RestaurantInfoCard";
-// import OperatingHours from "../components/restaurant/OperatingHours";
+import ErrorAlert from "../components/ui/ErrorAlert";
+import RestaurantInfoCard from "../components/restaurant/RestaurantInfoCard";
+import OperatingHours from "../components/restaurant/OperatingHours";
+
+const SpoonIcon = () => (
+  <svg
+    className="w-5 h-5"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M3 3l7.5 7.5M21 3l-7.5 7.5M3 21l7.5-7.5M21 21l-7.5-7.5"
+    />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M12 12v6m0-6h6m-6 0H6"
+    />
+  </svg>
+);
 
 const RestaurantPage = () => {
   const { id } = useParams();
@@ -53,7 +74,6 @@ const RestaurantPage = () => {
     };
   }, [dispatch, id]);
 
-  // Check if restaurant is open
   useEffect(() => {
     if (restaurant) {
       checkIfOpen();
@@ -119,7 +139,13 @@ const RestaurantPage = () => {
     Parking: <BuildingOfficeIcon className="w-5 h-5" />,
     Delivery: <TruckIcon className="w-5 h-5" />,
     Takeout: <ClipboardDocumentIcon className="w-5 h-5" />,
-    "Vegetarian Options": <SpoonIcon className="w-5 h-5" />,
+    "Vegetarian Options": <SpoonIcon />,
+    "Vegan Options": <SpoonIcon />,
+    "Gluten-Free Options": <SpoonIcon />,
+    "Wheelchair Accessible": <BuildingOfficeIcon className="w-5 h-5" />,
+    "Outdoor Seating": <SpoonIcon />,
+    Bar: <SpoonIcon />,
+    Reservations: <ClipboardDocumentIcon className="w-5 h-5" />,
   };
 
   return (
@@ -137,7 +163,6 @@ const RestaurantPage = () => {
 
         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 text-white">
           <div className="container mx-auto max-w-7xl">
-            {/* Verification Badge */}
             {restaurant.isVerified && (
               <div className="flex items-center gap-2 mb-3">
                 <div className="bg-green-500 rounded-full p-1">
@@ -158,11 +183,11 @@ const RestaurantPage = () => {
                 </span>
               </div>
             )}
+
             <h1 className="text-4xl md:text-6xl font-bold mb-4">
               {restaurant.name}
             </h1>
 
-            {/* Rating and Info Row */}
             <div className="flex flex-wrap items-center gap-4 mb-4">
               {restaurant.rating?.average > 0 && (
                 <div className="flex items-center gap-2">
@@ -192,15 +217,12 @@ const RestaurantPage = () => {
                     isOpen ? "bg-green-500" : "bg-red-500"
                   }`}
                 >
-                  <div
-                    className={`w-2 h-2 rounded-full ${isOpen ? "bg-white" : "bg-white"}`}
-                  />
+                  <div className={`w-2 h-2 rounded-full bg-white`} />
                   {isOpen ? "Open Now" : "Closed"}
                 </div>
               )}
             </div>
 
-            {/* Cuisine Tags */}
             <div className="flex flex-wrap gap-2">
               {restaurant.cuisine?.map((type, index) => (
                 <span
@@ -214,7 +236,6 @@ const RestaurantPage = () => {
           </div>
         </div>
 
-        {/* Favorite Button */}
         <button
           onClick={() => setIsFavorite(!isFavorite)}
           className="absolute top-6 right-6 bg-white rounded-full p-3 shadow-lg hover:shadow-xl transition-shadow"
@@ -227,7 +248,6 @@ const RestaurantPage = () => {
         </button>
       </div>
 
-      {/* Main Content */}
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Menu and Reviews */}
@@ -305,7 +325,6 @@ const RestaurantPage = () => {
 
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
-              {/* Contact Information */}
               <RestaurantInfoCard title="Contact Information">
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
@@ -354,9 +373,7 @@ const RestaurantPage = () => {
                         key={index}
                         className="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-lg text-sm"
                       >
-                        {amenityIcons[amenity] || (
-                          <SpoonIcon className="w-4 h-4" />
-                        )}
+                        {amenityIcons[amenity] || <SpoonIcon />}
                         <span>{amenity}</span>
                       </div>
                     ))}
