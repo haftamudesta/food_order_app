@@ -23,7 +23,21 @@ exports.createRestaurant = catchAsyncErrors(async (req, res, next) => {
 });
 
 exports.getAllRestaurants = catchAsyncErrors(async (req, res, next) => {
-  const features = new APIFeatures(Restaurant.find({ isActive: true }), req.query)
+  let query = Restaurant.find({ isActive: true });
+  
+  if (req.query.keyword) {
+    query = Restaurant.find(
+      { 
+        isActive: true,
+        $text: { $search: req.query.keyword }
+      },
+      { score: { $meta: "textScore" } }
+    ).sort({ score: { $meta: "textScore" } });
+  } else {
+    query = Restaurant.find({ isActive: true });
+  }
+  
+  const features = new APIFeatures(query, req.query)
     .filter()
     .sort()
     .limitFields()
@@ -31,7 +45,33 @@ exports.getAllRestaurants = catchAsyncErrors(async (req, res, next) => {
   
   const restaurants = await features.query;
   
-  const total = await Restaurant.countDocuments({ isActive: true });
+  let totalQuery = Restaurant.find({ isActive: true });
+  
+  if (req.query.keyword) {
+    totalQuery = Restaurant.find({ 
+      isActive: true,
+      $text: { $search: req.query.keyword }
+    });
+  }
+  
+  if (req.query.cuisine) {
+    const cuisineArray = req.query.cuisine.split(',');
+    totalQuery = totalQuery.find({ cuisine: { $in: cuisineArray } });
+  }
+  
+  if (req.query.city) {
+    totalQuery = totalQuery.find({ 'address.city': req.query.city });
+  }
+  
+  if (req.query.minRating) {
+    totalQuery = totalQuery.find({ 'rating.average': { $gte: parseFloat(req.query.minRating) } });
+  }
+  
+  if (req.query.maxPrice) {
+    totalQuery = totalQuery.find({ 'pricing.averageCost': { $lte: parseFloat(req.query.maxPrice) } });
+  }
+  
+  const total = await totalQuery.countDocuments();
   
   res.status(200).json({
     status: 'success',

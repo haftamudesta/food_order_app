@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { getRestaurants } from "../actions/restaurantAction";
+import { getRestaurants,getRestaurantById } from "../actions/restaurantAction";
 
 const initialState={
     restaurants:[],
@@ -27,6 +27,10 @@ const restaurantSlice=createSlice({
         clearError:(state)=>{
             state.error=null
         },
+        clearSelectedRestaurant: (state) => {
+            state.selectedRestaurant = null;
+            state.error = null;
+        },
     },
     extraReducers:(builder)=>{
         builder.addCase(getRestaurants.pending,(state)=>{
@@ -41,6 +45,18 @@ const restaurantSlice=createSlice({
             state.loading=false;
             state.error=action.payload||"faild to fetch restaurant"
         })
+        .addCase(getRestaurantById.pending, (state) => {
+                state.loading = true
+                state.error = null
+            })
+            .addCase(getRestaurantById.fulfilled, (state, action) => {
+                state.loading = false;
+                state.selectedRestaurant = action.payload;
+            })
+            .addCase(getRestaurantById.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || "Failed to fetch restaurant details"
+            })
     }
 })
 
@@ -48,7 +64,8 @@ export const{
     sortByRating,
     sortByReview,
     toggleVegOnly,
-    clearError
+    clearError,
+    clearSelectedRestaurant
 }=restaurantSlice.actions
 
 export default restaurantSlice.reducer

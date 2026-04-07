@@ -1,5 +1,6 @@
 import React from "react";
 
-export const MenuSection = () => {
+const MenuSection = () => {
   return <div>MenuSection</div>;
 };
+export default MenuSection;
