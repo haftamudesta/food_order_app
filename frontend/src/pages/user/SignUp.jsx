@@ -11,6 +11,7 @@ import {
   FaEye,
   FaEyeSlash,
 } from "react-icons/fa";
+import { useState } from "react";
 
 const SignUp = () => {
   const dispatch = useDispatch();
@@ -37,6 +38,7 @@ const SignUp = () => {
 
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+  // const [error,setError]=useState("")
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -65,6 +67,7 @@ const SignUp = () => {
     });
 
     if (!validateForm()) {
+      console.log("validation error");
       return;
     }
 

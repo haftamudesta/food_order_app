@@ -11,7 +11,6 @@ const MONGODB_URI = process.env.MONGODB_URI;
 console.log("🔄 Connecting to MongoDB...");
 console.log("Looking for .env at:", path.join(__dirname, '../config/config.env'));
 
-
 const menuCategories = {
   "Ethiopian Delight": {
     categories: [
