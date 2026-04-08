@@ -101,3 +101,18 @@ export const searchFoodItems = createAsyncThunk(
     }
   }
 );
+
+export const getPopularFoodItems = createAsyncThunk(
+  "food/getPopularFoodItems",
+  async ({ restaurantId, limit = 10 }, { rejectWithValue }) => {
+    try {
+      const { data } = await axiosInstance.get(`/v1/food/popular?restaurantId=${restaurantId}&limit=${limit}`);
+      return {
+        foodItems: data.data,
+        count: data.count
+      };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
