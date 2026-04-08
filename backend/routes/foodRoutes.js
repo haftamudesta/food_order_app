@@ -12,6 +12,6 @@ router.get("/allfoods",foodControllers.getAllFoodItems)
 router.get("/:id",foodControllers.getFoodItemById)
 router.delete("/:id",authorizeRoles("admin", "restaurant_owner"),foodControllers.deleteFoodItem)
 router.put("/:id",authorizeRoles("admin", "restaurant_owner"),foodControllers.updateFoodItem)
-router.get("/me/myoreders",foodControllers)
+// router.get("/me/myoreders",foodControllers)
 
 module.exports=router;

@@ -4,6 +4,7 @@ const FoodItem = require("../models/foodItem");
 const Menu = require("../models/menu");
 
 exports.getAllFoodItems = catchAsyncErrors(async (req, res, next) => {
+    console.log("food route hitted...")
     const { restaurantId, isAvailable, category, minPrice, maxPrice, isPopular, isNew } = req.query;
     
     // Build filter object

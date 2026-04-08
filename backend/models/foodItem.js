@@ -282,6 +282,6 @@ foodItemSchema.post('remove', async function(doc) {
   );
 });
 
-const FoodItem = mongoose.model('FoodItem', foodItemSchema);
+const FoodItem = mongoose.models.FoodItem || mongoose.model('FoodItem', foodItemSchema);
 
 module.exports = FoodItem;
