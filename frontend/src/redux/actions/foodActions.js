@@ -131,3 +131,18 @@ export const getDiscountedFoodItems = createAsyncThunk(
     }
   }
 );
+
+export const incrementOrderCount = createAsyncThunk(
+  "food/incrementOrderCount",
+  async ({ id, quantity = 1 }, { rejectWithValue }) => {
+    try {
+      const { data } = await axiosInstance.post(`/v1/food/${id}/increment-order`, { quantity });
+      return {
+        id,
+        orderCount: data.orderCount
+      };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
