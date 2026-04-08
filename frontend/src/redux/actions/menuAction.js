@@ -41,3 +41,15 @@ export const createMenu = createAsyncThunk(
   }
 );
 
+export const deleteMenu = createAsyncThunk(
+  "menu/deleteMenu",
+  async (menuId, { rejectWithValue }) => {
+    try {
+      await axiosInstance.delete(`/v1/menu/${menuId}`);
+      return menuId;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
