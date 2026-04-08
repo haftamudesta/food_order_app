@@ -77,3 +77,27 @@ export const deleteFoodItem = createAsyncThunk(
     }
   }
 );
+
+export const searchFoodItems = createAsyncThunk(
+  "food/searchFoodItems",
+  async ({ query, restaurantId, filters = {} }, { rejectWithValue }) => {
+    try {
+      const params = new URLSearchParams();
+      if (query) params.append("query", query);
+      if (restaurantId) params.append("restaurantId", restaurantId);
+      if (filters.maxPrice) params.append("maxPrice", filters.maxPrice);
+      if (filters.minPrice) params.append("minPrice", filters.minPrice);
+      if (filters.isPopular) params.append("isPopular", filters.isPopular);
+      if (filters.isNew) params.append("isNew", filters.isNew);
+      if (filters.hasDiscount) params.append("hasDiscount", filters.hasDiscount);
+      if (filters.sortByPrice) params.append("sortByPrice", filters.sortByPrice);
+      const { data } = await axiosInstance.get(`/v1/food/search?${params}`);
+      return {
+        foodItems: data.data,
+        count: data.count
+      };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
