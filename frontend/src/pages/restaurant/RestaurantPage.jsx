@@ -16,7 +16,7 @@ import {
   sortByReview,
   toggleVegOnly,
   clearError,
-} from "../../redux/slices/restaurantSlice"; // ← Add this import
+} from "../../redux/slices/restaurantSlice"; 
 
 const RestaurantsPage = () => {
   const dispatch = useDispatch();
