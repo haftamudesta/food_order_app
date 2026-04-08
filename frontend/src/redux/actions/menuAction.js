@@ -81,3 +81,24 @@ export const removeItemsFromMenu = createAsyncThunk(
     }
   }
 );
+
+export const updateCategoryName = createAsyncThunk(
+  "menu/updateCategoryName",
+  async ({ menuId, oldCategory, newCategory }, { rejectWithValue }) => {
+    try {
+      const { data: menuData } = await axiosInstance.get(`/v1/menu/restaurant/${menuId}`);
+      const menu = menuData.data;
+      
+      const categoryIndex = menu.menu.findIndex(cat => cat.category === oldCategory);
+      if (categoryIndex === -1) {
+        throw new Error("Category not found");
+      }
+      
+      menu.menu[categoryIndex].category = newCategory;
+       const { data } = await axiosInstance.post(`/v1/menu/${menu._id}`, menu);
+      return data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
