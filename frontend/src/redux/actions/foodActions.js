@@ -116,3 +116,18 @@ export const getPopularFoodItems = createAsyncThunk(
     }
   }
 );
+
+export const getDiscountedFoodItems = createAsyncThunk(
+  "food/getDiscountedFoodItems",
+  async (restaurantId, { rejectWithValue }) => {
+    try {
+      const { data } = await axiosInstance.get(`/v1/food/discounted?restaurantId=${restaurantId}`);
+      return {
+        foodItems: data.data,
+        count: data.count
+      };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
