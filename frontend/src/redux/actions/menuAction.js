@@ -17,3 +17,15 @@ export const getAllMenus = createAsyncThunk(
   }
 );
 
+export const getMenuByRestaurant = createAsyncThunk(
+  "menu/getMenuByRestaurant",
+  async (restaurantId, { rejectWithValue }) => {
+    try {
+      const { data } = await axiosInstance.get(`/v1/menu/restaurant/${restaurantId}`);
+      return data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
