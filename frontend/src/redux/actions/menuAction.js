@@ -29,3 +29,15 @@ export const getMenuByRestaurant = createAsyncThunk(
   }
 );
 
+export const createMenu = createAsyncThunk(
+  "menu/createMenu",
+  async (menuData, { rejectWithValue }) => {
+    try {
+      const { data } = await axiosInstance.post("/v1/menu", menuData);
+      return data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
