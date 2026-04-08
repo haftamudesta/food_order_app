@@ -41,3 +41,15 @@ export const getFoodItemById = createAsyncThunk(
     }
   }
 );
+
+export const createFoodItem = createAsyncThunk(
+  "food/createFoodItem",
+  async (foodData, { rejectWithValue }) => {
+    try {
+      const { data } = await axiosInstance.post("/v1/food", foodData);
+      return data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);

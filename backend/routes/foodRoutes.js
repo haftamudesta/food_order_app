@@ -8,7 +8,8 @@ router.get("/search", foodControllers.searchFoodItems);
 router.get("/popular", foodControllers.getPopularItems);
 router.get("/discounted", foodControllers.getDiscountedItems);
 
-router.get("/allfoods",foodControllers.getAllFoodItems)
+router.get("/",foodControllers.getAllFoodItems)
+router.post("/",foodControllers.createFoodItem)
 router.get("/:id",foodControllers.getFoodItemById)
 router.delete("/:id",authorizeRoles("admin", "restaurant_owner"),foodControllers.deleteFoodItem)
 router.put("/:id",authorizeRoles("admin", "restaurant_owner"),foodControllers.updateFoodItem)
