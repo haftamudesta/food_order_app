@@ -53,3 +53,18 @@ export const deleteMenu = createAsyncThunk(
   }
 );
 
+export const addItemsToMenu = createAsyncThunk(
+  "menu/addItemsToMenu",
+  async ({ menuId, category, foodItemId }, { rejectWithValue }) => {
+    try {
+      const { data } = await axiosInstance.post(`/v1/menu/${menuId}/items`, {
+        category,
+        foodItemId
+      });
+      return data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
