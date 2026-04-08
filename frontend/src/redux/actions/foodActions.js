@@ -65,3 +65,15 @@ export const updateFoodItem = createAsyncThunk(
     }
   }
 );
+
+export const deleteFoodItem = createAsyncThunk(
+  "food/deleteFoodItem",
+  async (id, { rejectWithValue }) => {
+    try {
+      await axiosInstance.delete(`/v1/food/${id}`);
+      return id;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
