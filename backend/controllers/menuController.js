@@ -15,7 +15,6 @@ exports.getAllMenus=catchAsyncErrors(async(req,res,next)=>{
 exports.createMenu=catchAsyncErrors(async(req,res,next)=>{
     const menu=await Menu.create(req.body)
 
-     // Populate the created menu if there are items
     if (menu.menu && menu.menu.length > 0) {
         await menu.populate("menu.items");
     }
@@ -87,10 +86,8 @@ exports.removeItemsFromMenu = catchAsyncErrors(async (req, res, next) => {
         return next(new AppError("Food item not found in this category", 404));
     }
     
-    // Remove the item
     menu.menu[catIndex].items.splice(itemIndex, 1);
     
-    //Remove category if it becomes empty
     if (menu.menu[catIndex].items.length === 0) {
         menu.menu.splice(catIndex, 1);
     }
@@ -115,5 +112,23 @@ exports.getMenuByRestaurant = catchAsyncErrors(async (req, res, next) => {
         success: true,
         data: menu
     });
+});
+exports.updateMenu = catchAsyncErrors(async (req, res, next) => {
+  const menu = await Menu.findByIdAndUpdate(
+    req.params.menuId,
+    req.body,
+    {
+      new: true,
+      runValidators: true
+    }
+  ).populate("menu.items");
+  
+  if (!menu) {
+    return next(new AppError("Menu not found with this Id", 404));
+  }
+  res.status(200).json({
+    success: true,
+    data: menu
+  });
 });
 
