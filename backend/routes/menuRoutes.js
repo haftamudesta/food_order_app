@@ -13,5 +13,6 @@ router.delete("/:menuId/items", menuControllers.removeItemsFromMenu);
 
 
 router.get("/restaurant/:restaurantId", menuControllers.getMenuByRestaurant);
+router.put("/:menuId", isAuthenticatedUser, authorizeRoles("admin", "restaurant_owner"), menuControllers.updateMenu);
 
 module.exports = router;
