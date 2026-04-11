@@ -1,24 +1,37 @@
 import React, { useState } from "react";
-import { useDispatch } from "react-redux";
-import { StarIcon, PlusIcon, MinusIcon } from "@heroicons/react/24/solid";
+import { useDispatch, useSelector } from "react-redux";
+import { PlusIcon, MinusIcon, CheckIcon } from "@heroicons/react/24/solid";
 import { incrementOrderCount } from "@/redux/actions/foodActions";
 
 const FoodItemCard = ({ item }) => {
   const dispatch = useDispatch();
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
   const primaryImage =
     item.images?.find((img) => img.isPrimary) || item.images?.[0];
   const displayImage = primaryImage?.url || "/images/food-placeholder.jpg";
   const isDiscounted = item.isDiscountActive;
   const currentPrice = isDiscounted ? item.discountedPrice : item.price;
   const discountPercent = item.discount;
-  const handleAddToCart = () => {
-    console.log(`Added ${quantity} x ${item.name} to cart`);
-    dispatch(incrementOrderCount({ id: item._id, quantity }));
-    setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 2000);
+
+  const handleAddToCart = async () => {
+    if (!item.isAvailable) return;
+
+    setIsUpdating(true);
+    try {
+      console.log(`Added ${quantity} x ${item.name} to cart`);
+      await dispatch(incrementOrderCount({ id: item._id, quantity })).unwrap();
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 2000);
+    } catch (error) {
+      console.error("Failed to add to cart:", error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
       <div className="flex gap-3 p-3">
@@ -76,6 +89,11 @@ const FoodItemCard = ({ item }) => {
                 Recommended
               </span>
             )}
+            {item.orderCount > 0 && (
+              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                {item.orderCount}+ orders
+              </span>
+            )}
           </div>
           <div className="flex items-center justify-end gap-3 mt-3">
             {quantity > 0 && (
@@ -83,6 +101,7 @@ const FoodItemCard = ({ item }) => {
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   className="p-1 hover:bg-gray-200 rounded-l-lg transition-colors"
+                  disabled={isUpdating}
                 >
                   <MinusIcon className="w-4 h-4" />
                 </button>
@@ -92,6 +111,7 @@ const FoodItemCard = ({ item }) => {
                 <button
                   onClick={() => setQuantity(quantity + 1)}
                   className="p-1 hover:bg-gray-200 rounded-r-lg transition-colors"
+                  disabled={isUpdating}
                 >
                   <PlusIcon className="w-4 h-4" />
                 </button>
@@ -99,18 +119,28 @@ const FoodItemCard = ({ item }) => {
             )}
             <button
               onClick={handleAddToCart}
-              disabled={!item.isAvailable}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                item.isAvailable
+              disabled={!item.isAvailable || isUpdating}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${
+                item.isAvailable && !isUpdating
                   ? "bg-orange-600 text-white hover:bg-orange-700"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
             >
-              {addedToCart
-                ? "Added!"
-                : item.isAvailable
-                  ? "Add to Cart"
-                  : "Out of Stock"}
+              {isUpdating ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Adding...
+                </>
+              ) : addedToCart ? (
+                <>
+                  <CheckIcon className="w-4 h-4" />
+                  Added!
+                </>
+              ) : item.isAvailable ? (
+                "Add to Cart"
+              ) : (
+                "Out of Stock"
+              )}
             </button>
           </div>
         </div>
