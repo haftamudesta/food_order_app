@@ -10,7 +10,7 @@ import {
   getDiscountedFoodItems,
   incrementOrderCount,
   getItemsByCategory
-} from "../actions/foodAction";
+} from "../actions/foodActions";
 
 const initialState = {
   foodItems: [],

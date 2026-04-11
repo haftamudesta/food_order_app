@@ -9,6 +9,7 @@ import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import SignIn from "./pages/user/SignIn";
 import ResetPassword from "./pages/user/ResetPassword";
 import Unauthorized from "./shared/components/fallback/Unauthorized";
+import RestaurantMenuPage from "./pages/restaurant/RestaurantMenuPage";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
               element={<Home />}
               exact
             />
+            <Route path="/restaurant/:id" element={<RestaurantMenuPage />} />
             <Route path="/sign-up" element={<SignUp />} exact />
             <Route path="/sign-in" element={<SignIn />} exact />
             <Route path="/forgot-password" element={<ResetPassword />} />
