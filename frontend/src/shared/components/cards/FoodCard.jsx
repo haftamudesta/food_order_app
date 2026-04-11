@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { StarIcon, PlusIcon, MinusIcon } from "@heroicons/react/24/solid";
-import { incrementOrderCount } from "../../redux/actions/foodAction";
+import { incrementOrderCount } from "@/redux/actions/foodActions";
 
 const FoodItemCard = ({ item }) => {
   const dispatch = useDispatch();

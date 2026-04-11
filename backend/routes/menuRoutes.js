@@ -1,5 +1,6 @@
 const express = require("express");
 const menuControllers = require("../controllers/menuController");
+const authorizeRoles=require("../middleware/authorizeRoles")
 
 const router = express.Router();
 
@@ -13,6 +14,6 @@ router.delete("/:menuId/items", menuControllers.removeItemsFromMenu);
 
 
 router.get("/restaurant/:restaurantId", menuControllers.getMenuByRestaurant);
-router.put("/:menuId", isAuthenticatedUser, authorizeRoles("admin", "restaurant_owner"), menuControllers.updateMenu);
+router.put("/:menuId",authorizeRoles("admin", "restaurant_owner"), menuControllers.updateMenu);
 
 module.exports = router;

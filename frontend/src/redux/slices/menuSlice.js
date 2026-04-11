@@ -6,7 +6,6 @@ import {
   deleteMenu,
   addItemsToMenu,
   removeItemsFromMenu,
-  bulkAddItemsToMenu,
   updateCategoryName
 } from "../actions/menuAction";
 
