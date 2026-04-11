@@ -1,4 +1,3 @@
-// pages/restaurant/RestaurantMenuPage.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -70,7 +69,6 @@ const RestaurantMenuPage = () => {
 
   useEffect(() => {
     if (foodItems && foodItems.length > 0) {
-      // Extract unique categories from food items
       const uniqueCategories = [
         ...new Set(foodItems.map((item) => item.category).filter(Boolean)),
       ];
@@ -84,7 +82,6 @@ const RestaurantMenuPage = () => {
       sortBy: sortBy,
     };
 
-    // Only add isAvailable filter if showOnlyAvailable is true
     if (showOnlyAvailable) {
       filters.isAvailable = true;
     }
@@ -112,17 +109,14 @@ const RestaurantMenuPage = () => {
 
     let items = [...foodItems];
 
-    // Filter by availability
     if (showOnlyAvailable) {
       items = items.filter((item) => item.isAvailable);
     }
 
-    // Filter by category
     if (selectedCategory) {
       items = items.filter((item) => item.category === selectedCategory);
     }
 
-    // Filter by price range
     if (priceRange.min) {
       items = items.filter((item) => item.price >= parseFloat(priceRange.min));
     }
@@ -130,7 +124,6 @@ const RestaurantMenuPage = () => {
       items = items.filter((item) => item.price <= parseFloat(priceRange.max));
     }
 
-    // Filter by tab
     if (activeTab === "popular") {
       items = items.filter((item) => item.isPopular || item.orderCount > 5);
     } else if (activeTab === "discounted") {
@@ -139,7 +132,6 @@ const RestaurantMenuPage = () => {
       items = items.filter((item) => item.isNewOne);
     }
 
-    // Sort items
     if (sortBy === "-price") {
       items.sort((a, b) => b.price - a.price);
     } else if (sortBy === "price") {
@@ -207,7 +199,6 @@ const RestaurantMenuPage = () => {
     restaurant.images?.find((img) => img.isPrimary) || restaurant.images?.[0];
   const backgroundImage = primaryImage?.url || "/images/restaurant-hero.jpg";
 
-  // Check if restaurant is open (simple logic)
   const getIsOpen = () => {
     const days = [
       "sunday",
@@ -237,7 +228,6 @@ const RestaurantMenuPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Restaurant Header */}
       <div className="relative h-64 md:h-80 lg:h-96">
         <div className="absolute inset-0">
           <img
@@ -245,7 +235,7 @@ const RestaurantMenuPage = () => {
             alt={restaurant.name}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/50 to-transparent" />
         </div>
 
         <div className="absolute top-4 left-4 z-10">
@@ -309,7 +299,6 @@ const RestaurantMenuPage = () => {
 
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar - Filters (Desktop) */}
           <div className="hidden lg:block lg:col-span-1">
             <div className="sticky top-24 space-y-6">
               <RestaurantInfoCard title="Restaurant Info">
@@ -435,7 +424,6 @@ const RestaurantMenuPage = () => {
             </div>
           </div>
 
-          {/* Main Content */}
           <div className="lg:col-span-3">
             {/* Mobile Filter Toggle */}
             <div className="lg:hidden mb-4">
@@ -465,7 +453,6 @@ const RestaurantMenuPage = () => {
               </button>
             </div>
 
-            {/* Mobile Filters Panel */}
             {showFilters && (
               <div className="lg:hidden mb-6 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="flex justify-between items-center mb-4">
@@ -547,7 +534,6 @@ const RestaurantMenuPage = () => {
               </div>
             )}
 
-            {/* Tabs and Sort */}
             <div className="mb-6">
               <div className="flex flex-wrap justify-between items-center gap-4">
                 <div className="flex flex-wrap gap-1 border-b border-gray-200">
@@ -611,14 +597,12 @@ const RestaurantMenuPage = () => {
               </div>
             </div>
 
-            {/* Results Count */}
             <div className="mb-4 text-sm text-gray-600">
               Showing {filteredItems.length}{" "}
               {filteredItems.length === 1 ? "item" : "items"}
               {total > 0 && ` out of ${total} total`}
             </div>
 
-            {/* Food Items Grid */}
             {foodLoading ? (
               <div className="flex justify-center py-12">
                 <LoadingSpinner size="large" />
