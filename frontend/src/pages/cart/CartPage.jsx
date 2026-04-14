@@ -338,7 +338,6 @@ const CartPage = () => {
                   </div>
                 )}
               </div>
-
               <div className="mt-6 space-y-3">
                 <button
                   onClick={handleCheckout}

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { PlusIcon, MinusIcon, CheckIcon } from "@heroicons/react/24/solid";
 import { incrementOrderCount } from "@/redux/actions/foodActions";
+import { addToCart } from "../../redux/actions/cartAction";
 
 const FoodItemCard = ({ item }) => {
   const dispatch = useDispatch();
@@ -21,8 +22,13 @@ const FoodItemCard = ({ item }) => {
 
     setIsUpdating(true);
     try {
-      console.log(`Added ${quantity} x ${item.name} to cart`);
-      await dispatch(incrementOrderCount({ id: item._id, quantity })).unwrap();
+      await dispatch(
+        addToCart({
+          foodItemId: item._id,
+          quantity,
+          specialInstructions: "",
+        }),
+      ).unwrap();
       setAddedToCart(true);
       setTimeout(() => setAddedToCart(false), 2000);
     } catch (error) {
