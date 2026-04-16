@@ -11,6 +11,11 @@ const orderRoutes = require("./routes/orderRoute");
 const menuRoutes = require("./routes/menuRoutes");
 const foodRoutes=require("./routes/foodRoutes")
 const cartRoutes = require("./routes/cartRoute");
+const paymentRoutes = require("./routes/paymentRoute");
+
+// For Stripe webhook, need raw body
+app.post('/api/v1/payment/webhook', express.raw({ type: 'application/json' }), paymentRoutes);
+// Regular routes
 app.use(cors())
 app.use(express.json())
 app.use(bodyParser.urlencoded({extended:true}))
@@ -22,5 +27,6 @@ app.use("/api/v1/order", orderRoutes);
 app.use("/api/v1/menu", menuRoutes);
 app.use("/api/v1/food", foodRoutes);
 app.use("/api/v1/cart", cartRoutes);
+app.use("/api/v1/payment", paymentRoutes);
 
 module.exports=app
