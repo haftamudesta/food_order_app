@@ -1,4 +1,3 @@
-// frontend/src/components/payment/StripePaymentForm.jsx
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
