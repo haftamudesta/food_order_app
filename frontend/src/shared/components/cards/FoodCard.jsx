@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { PlusIcon, MinusIcon, CheckIcon } from "@heroicons/react/24/solid";
 import { incrementOrderCount } from "@/redux/actions/foodActions";
-import { addToCart } from "../../redux/actions/cartAction";
+import { addToCart } from "../../../redux/actions/cartAction";
 
 const FoodItemCard = ({ item }) => {
   const dispatch = useDispatch();
