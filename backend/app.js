@@ -13,6 +13,9 @@ const foodRoutes=require("./routes/foodRoutes")
 const cartRoutes = require("./routes/cartRoute");
 const paymentRoutes = require("./routes/paymentRoute");
 
+const dotenv = require('dotenv');
+dotenv.config({ path: './config/config.env' });
+
 // For Stripe webhook, need raw body
 app.post('/api/v1/payment/webhook', express.raw({ type: 'application/json' }), paymentRoutes);
 // Regular routes
