@@ -1,3 +1,4 @@
+// backend/models/user.js
 const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcryptjs"); 
@@ -57,12 +58,21 @@ const userSchema = new mongoose.Schema({
     timestamps: true,
 });
 
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-    if (!this.isModified("password")) return next();
+// CORRECTED: Hash password before saving
+userSchema.pre('save', function(next) {
+    // Check if password is modified
+    if (!this.isModified('password')) {
+        return next();
+    }
     
-    this.password = await bcrypt.hash(this.password, 12);
-    next();
+    // Hash password
+    bcrypt.hash(this.password, 12, (err, hashedPassword) => {
+        if (err) {
+            return next(err);
+        }
+        this.password = hashedPassword;
+        next();
+    });
 });
 
 // Instance method to check password

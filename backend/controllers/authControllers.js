@@ -1,4 +1,4 @@
-// backend/controllers/userController.js
+// backend/controllers/authControllers.js
 const User = require("../models/user");
 const sendToken = require("../utils/SendToken");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
@@ -36,7 +36,6 @@ exports.signUp = catchAsyncErrors(async (req, res, next) => {
         role: role || "user"
     });
 
-    // Send token via cookie/response
     sendToken(user, 201, res);
 });
 

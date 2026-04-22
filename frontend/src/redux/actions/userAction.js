@@ -23,20 +23,17 @@ import {
     }
 };
 
- export const signUp=()=>async(dispatch)=>{
+ export const signUp = (userData) => async (dispatch) => {
     try {
-        dispatch(loginRequest())
-    const {data}=await axiosInstance.post("/v1/users/sign_up",userData,{
-        headers:{
-           "Content-Type":"application/json"
-        }
-    })
-    dispatch(loginSuccess(data.data.user))
+        dispatch(loginRequest());
+        const { data } = await axiosInstance.post("/v1/auth/sign_up", userData);
+        dispatch(loginSuccess(data.user));
+        return data;
     } catch (error) {
         dispatch(loginFail(error.response?.data?.message || "Sign up failed"));
+        throw error;
     }
- }
-
+};
  export const logout = () => async (dispatch) => {
     try {
         const { data } = await axiosInstance.post("/v1/users/log_out");
