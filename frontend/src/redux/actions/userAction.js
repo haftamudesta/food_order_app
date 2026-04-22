@@ -23,7 +23,7 @@ import {
     }
 };
 
- export const signUp=async(dispatch)=>{
+ export const signUp=()=>async(dispatch)=>{
     try {
         dispatch(loginRequest())
     const {data}=await axiosInstance.post("/v1/users/sign_up",userData,{
