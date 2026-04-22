@@ -1,15 +1,14 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcryptjs"); 
-const jwt=require("jsonwebtoken")
-
+const jwt = require("jsonwebtoken");
 
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
         required: [true, "Name is required"],
         trim: true,
-        minlength: [2, "Name must be at least 3 characters long"],
+        minlength: [2, "Name must be at least 2 characters long"],
         maxlength: [50, "Name cannot exceed 50 characters"]
     },
     email: {
@@ -38,47 +37,40 @@ const userSchema = new mongoose.Schema({
         minlength: [6, "Password must be at least 6 characters"],
         select: false 
     },
-    confirmPassword: {
-        type: String,
-        required: [true, "Please confirm your password"],
-        validate: {
-            validator: function(el) {
-                return el === this.password;
-            },
-            message: "Passwords do not match"
-        }
-    },
     role: {
         type: String,
-        enum: ["user", "admin"],
+        enum: ["user", "admin", "restaurant_owner"],
         default: "user"
     },
     isActive: {
         type: Boolean,
         default: true
     },
-    profile_pic:{
-        public_id:String,
-        url:String,
+    profile_pic: {
+        public_id: String,
+        url: String,
     },
-    passwordChangedAt:Date,
-    passwordResetToken:String,
-    passwordResetExpires:Date
+    passwordChangedAt: Date,
+    passwordResetToken: String,
+    passwordResetExpires: Date
 }, {
     timestamps: true,
 });
 
 // Hash password before saving
-userSchema.pre('save', async function() {
-    if (!this.isModified("password")) return;
+userSchema.pre('save', async function(next) {
+    if (!this.isModified("password")) return next();
     
     this.password = await bcrypt.hash(this.password, 12);
+    next();
 });
+
 // Instance method to check password
 userSchema.methods.comparePassword = async function(candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
+// Instance method to generate JWT token
 userSchema.methods.getJWTToken = function() {
     return jwt.sign(
         { 
