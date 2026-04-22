@@ -1,12 +1,11 @@
-// Start the server
+// Load environment variables
 const dotenv = require("dotenv");
 dotenv.config({ path: "./config/config.env" });
 
 const app = require("./app");
 const connectDB = require("./DBConnection");
 
-
-// Load environment variables
+// Start the server
 
 const startServer = async () => {
   try {
