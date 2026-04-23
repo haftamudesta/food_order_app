@@ -19,7 +19,6 @@ import {
         const { data } = await axiosInstance.post("/v1/auth/log_in", { email, password });
         if (data.token) {
             localStorage.setItem("token", data.token);
-            console.log("Token stored in localStorage");
         }
         dispatch(loginSuccess(data.user));
         return data;
@@ -32,10 +31,9 @@ import {
     try {
         dispatch(loginRequest());
         const { data } = await axiosInstance.post("/v1/auth/sign_up", userData);
-        
+
         if (data.token) {
             localStorage.setItem("token", data.token);
-            console.log("Token stored in localStorage");
         }
         dispatch(loginSuccess(data.user));
         return data;
@@ -53,7 +51,6 @@ import {
     }
 };
 
-//Load user
 export const loadUser = () => async (dispatch) => {
     try {
         dispatch(loginRequest());

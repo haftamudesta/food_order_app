@@ -11,7 +11,6 @@ export const getRestaurants = createAsyncThunk(
       }
       
       const { data } = await axiosInstance.get(`/v1/restaurant`, { params });
-      console.log("Fetched restaurants", data);
       
       return {
         restaurants: data.data?.restaurants || [],  

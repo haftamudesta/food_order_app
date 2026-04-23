@@ -20,7 +20,6 @@ const userSlice=createSlice({
             state.isAuthenticated=false;
         },
         loginSuccess:(state,action)=>{
-            console.log("logged in successfully")
             state.loading=false;
             state.isAuthenticated=true
             state.user=action.payload;
@@ -33,6 +32,15 @@ const userSlice=createSlice({
             state.isAuthenticated=false;
             state.user=null;
             state.error=action.payload;
+        },
+         loadUserRequest: (state) => {
+            state.loading = true;
+        },
+        loadUserSuccess: (state, action) => {
+            state.loading = false;
+            state.isAuthenticated = true;
+            state.user = action.payload;
+            state.error = null;
         },
         loadUserFail:(state,action)=>{
             state.loading=false;
@@ -70,7 +78,7 @@ const userSlice=createSlice({
 })
 
 export const {
-    loginRequest,loginSuccess,loginFail,loadUserFail,logoutSuccess,logoutFail,updateRequest,updateSuccess,updateFail,updateReset,clearError
+    loginRequest,loginSuccess,loginFail,loadUserRequest,loadUserSuccess,loadUserFail,logoutSuccess,logoutFail,updateRequest,updateSuccess,updateFail,updateReset,clearError,setToken
 }=userSlice.actions
 
 export default userSlice.reducer
