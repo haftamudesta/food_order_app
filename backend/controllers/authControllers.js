@@ -1,4 +1,3 @@
-// backend/controllers/authControllers.js
 const User = require("../models/user");
 const sendToken = require("../utils/SendToken");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");

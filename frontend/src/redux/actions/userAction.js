@@ -16,7 +16,7 @@ import {
  export const logIn = (email, password) => async (dispatch) => {
     try {
         dispatch(loginRequest());
-        const { data } = await axiosInstance.post("/v1/users/log_in", { email, password });
+        const { data } = await axiosInstance.post("/v1/auth/log_in", { email, password });
         dispatch(loginSuccess(data.data.user));
     } catch (error) {
         dispatch(loginFail(error.response?.data?.message || "Log in failed"));
