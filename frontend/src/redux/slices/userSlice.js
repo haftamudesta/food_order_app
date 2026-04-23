@@ -19,6 +19,7 @@ const userSlice=createSlice({
             state.isAuthenticated=false;
         },
         loginSuccess:(state,action)=>{
+            console.log("logged in successfully")
             state.loading=false;
             state.isAuthenticated=true
             state.user=action.payload;
