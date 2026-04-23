@@ -14,7 +14,6 @@ const userSlice=createSlice({
     name:"user",
     initialState,
     reducers:{
-        //for log in,register,load
         loginRequest:(state)=>{
             state.loading=true;
             state.isAuthenticated=false;
