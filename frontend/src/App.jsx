@@ -1,4 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
 import "./App.css";
 import Header from "./shared/components/layout/Header";
 import Footer from "./shared/components/layout/Footer";
@@ -10,8 +12,19 @@ import SignIn from "./pages/user/SignIn";
 import ResetPassword from "./pages/user/ResetPassword";
 import Unauthorized from "./shared/components/fallback/Unauthorized";
 import RestaurantMenuPage from "./pages/restaurant/RestaurantMenuPage";
+import { loadUser } from "./redux/actions/userAction";
 
 function App() {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    console.log("Token found in localStorage:", !!token);
+
+    if (token) {
+      dispatch(loadUser());
+    }
+  }, [dispatch]);
   return (
     <>
       <Router>
