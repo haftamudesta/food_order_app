@@ -8,6 +8,7 @@ const initialState={
     isUpdated:false,
     message:null,
     success:null,
+    token:null,
 }
 
 const userSlice=createSlice({
@@ -23,11 +24,23 @@ const userSlice=createSlice({
             state.isAuthenticated=true
             state.user=action.payload;
         },
+        setToken: (state, action) => {
+            state.token = action.payload;
+        },
         loginFail:(state,action)=>{
             state.loading=false;
             state.isAuthenticated=false;
             state.user=null;
             state.error=action.payload;
+        },
+         loadUserRequest: (state) => {
+            state.loading = true;
+        },
+        loadUserSuccess: (state, action) => {
+            state.loading = false;
+            state.isAuthenticated = true;
+            state.user = action.payload;
+            state.error = null;
         },
         loadUserFail:(state,action)=>{
             state.loading=false;
@@ -65,7 +78,7 @@ const userSlice=createSlice({
 })
 
 export const {
-    loginRequest,loginSuccess,loginFail,loadUserFail,logoutSuccess,logoutFail,updateRequest,updateSuccess,updateFail,updateReset,clearError
+    loginRequest,loginSuccess,loginFail,loadUserRequest,loadUserSuccess,loadUserFail,logoutSuccess,logoutFail,updateRequest,updateSuccess,updateFail,updateReset,clearError,setToken
 }=userSlice.actions
 
 export default userSlice.reducer

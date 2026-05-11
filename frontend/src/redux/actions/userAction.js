@@ -10,14 +10,29 @@ import {
     updateSuccess,
     updateFail,
     updateReset,
-    clearError
+    clearError,
+    loadUserSuccess
  } from "../slices/userSlice";
 
  export const logIn = (email, password) => async (dispatch) => {
     try {
         dispatch(loginRequest());
         const { data } = await axiosInstance.post("/v1/auth/log_in", { email, password });
-        dispatch(loginSuccess(data.data.user));
+
+        let userData;
+        if (data.data && data.data.user) {
+            userData = data.data.user;
+        } else if (data.user) {
+            userData = data.user;
+        } else {
+            userData = data;
+        }
+
+        if (data.token) {
+            localStorage.setItem("token", data.token);
+        }
+        dispatch(loginSuccess(userData));
+        return data;
     } catch (error) {
         dispatch(loginFail(error.response?.data?.message || "Log in failed"));
     }
@@ -27,6 +42,10 @@ import {
     try {
         dispatch(loginRequest());
         const { data } = await axiosInstance.post("/v1/auth/sign_up", userData);
+
+        if (data.token) {
+            localStorage.setItem("token", data.token);
+        }
         dispatch(loginSuccess(data.user));
         return data;
     } catch (error) {
@@ -37,18 +56,18 @@ import {
  export const logout = () => async (dispatch) => {
     try {
         const { data } = await axiosInstance.post("/v1/users/log_out");
+        localStorage.removeItem("token");
         dispatch(logoutSuccess(data.message));
     } catch (error) {
         dispatch(logoutFail(error.response?.data?.message || "Logout failed"));
     }
 };
 
-//Load user
 export const loadUser = () => async (dispatch) => {
     try {
         dispatch(loginRequest());
         const { data } = await axiosInstance.get("/v1/users/profile");
-        dispatch(loginSuccess(data.data.user));
+        dispatch(loadUserSuccess(data.data.user));
     } catch (error) {
         dispatch(loadUserFail(error.response?.data?.message || "Load user failed"));
     }
