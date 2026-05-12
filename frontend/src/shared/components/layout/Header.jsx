@@ -49,15 +49,15 @@ const Header = () => {
   }, [isAuthenticated, loading, navigate]);
 
   const handleLogout = async () => {
-    await dispatch(logout()).unwrap();
+    await dispatch(logout());
     navigate("/sign-in");
     setIsMobileMenuOpen(false);
   };
 
   const navLinks = [
-    { to: "/", label: "Home", icon: "🏠" },
-    { to: "/restaurants", label: "Restaurants", icon: "🍽️" },
-    { to: "/about", label: "About", icon: "ℹ️" },
+    { to: "/", label: "Home" },
+    { to: "/restaurants", label: "Restaurants" },
+    { to: "/about", label: "About" },
   ];
 
   const getInitials = (name) => {
@@ -118,7 +118,6 @@ const Header = () => {
                     }
                   `}
                 >
-                  <span>{link.icon}</span>
                   <span>{link.label}</span>
                 </NavLink>
               ))}
@@ -246,7 +245,6 @@ const Header = () => {
       {isMobileMenuOpen && (
         <div className="mobile-menu fixed inset-x-0 top-[60px] z-40 bg-white shadow-lg md:hidden animate-slideDown">
           <div className="flex flex-col p-4 space-y-2">
-            {/* Navigation Links */}
             {navLinks.map((link) => (
               <NavLink
                 key={link.to}
@@ -261,14 +259,11 @@ const Header = () => {
                   }
                 `}
               >
-                <span className="text-xl">{link.icon}</span>
                 <span className="font-medium">{link.label}</span>
               </NavLink>
             ))}
 
             <hr className="my-2" />
-
-            {/* Cart Link (Mobile) */}
             <Link
               to="/cart"
               onClick={() => setIsMobileMenuOpen(false)}
@@ -286,8 +281,6 @@ const Header = () => {
             </Link>
 
             <hr className="my-2" />
-
-            {/* Auth Links (Mobile) */}
             {isAuthenticated && user ? (
               <>
                 <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg">
