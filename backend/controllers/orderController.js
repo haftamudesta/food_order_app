@@ -7,7 +7,6 @@ const Restaurant = require("../models/restaurant");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const AppError = require("../utils/errorHandler");
 
-
 exports.getSingleOrder=catchAsyncErrors(async(req,res,next)=>{
     const order=await Order.findById(req.params.id).populate("user","name email").populate("restaurant").exec()
     if (!order) {
