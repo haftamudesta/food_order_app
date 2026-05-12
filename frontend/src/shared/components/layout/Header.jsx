@@ -1,4 +1,3 @@
-// shared/components/layout/Header.jsx
 import { useEffect, useState } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -20,7 +19,6 @@ const Header = () => {
   const { isAuthenticated, user, loading } = useSelector((state) => state.user);
   const { itemCount } = useSelector((state) => state.cart || { itemCount: 0 });
 
-  // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -29,7 +27,6 @@ const Header = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close mobile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (isMobileMenuOpen && !event.target.closest(".mobile-menu")) {
@@ -73,27 +70,25 @@ const Header = () => {
           ${
             isScrolled
               ? "bg-white shadow-lg"
-              : "bg-gradient-to-r from-orange-600 to-orange-700"
+              : "bg-linear-to-r from-orange-600 to-orange-700"
           }
         `}
       >
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center py-3 md:py-4">
-            {/* Logo */}
             <Link
               to="/"
               className="flex items-center space-x-2 text-xl font-bold transition-transform hover:scale-105"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <span className={isScrolled ? "text-orange-600" : "text-white"}>
-                Foodie
+                Food
               </span>
               <span className={isScrolled ? "text-gray-700" : "text-white"}>
-                Express
+                Delivery
               </span>
             </Link>
 
-            {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-1">
               {navLinks.map((link) => (
                 <NavLink
@@ -118,9 +113,7 @@ const Header = () => {
               ))}
             </div>
 
-            {/* Right Section - Cart & Auth */}
             <div className="hidden md:flex items-center space-x-3">
-              {/* Cart Icon */}
               <Link
                 to="/cart"
                 className={`
@@ -139,11 +132,8 @@ const Header = () => {
                   </span>
                 )}
               </Link>
-
-              {/* Auth Section - Simple Sign Out Button */}
               {isAuthenticated && user ? (
                 <div className="flex items-center space-x-2">
-                  {/* User Avatar/Initials */}
                   <div className="flex items-center gap-2">
                     {user?.profile_pic?.url ? (
                       <img
@@ -167,8 +157,6 @@ const Header = () => {
                       {user?.name?.split(" ")[0]}
                     </span>
                   </div>
-
-                  {/* Profile Link */}
                   <Link
                     to="/profile"
                     className={`
@@ -182,8 +170,6 @@ const Header = () => {
                   >
                     Profile
                   </Link>
-
-                  {/* Sign Out Button */}
                   <button
                     onClick={handleLogout}
                     className={`
@@ -230,8 +216,6 @@ const Header = () => {
                 </div>
               )}
             </div>
-
-            {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className={`
@@ -248,8 +232,6 @@ const Header = () => {
           </div>
         </div>
       </nav>
-
-      {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="mobile-menu fixed inset-x-0 top-[60px] z-40 bg-white shadow-lg md:hidden animate-slideDown">
           <div className="flex flex-col p-4 space-y-2">

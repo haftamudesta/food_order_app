@@ -55,7 +55,7 @@ import {
 };
  export const logout = () => async (dispatch) => {
     try {
-        const { data } = await axiosInstance.post("/v1/users/log_out");
+        const { data } = await axiosInstance.post("/v1/auth/log_out");
         localStorage.removeItem("token");
         dispatch(logoutSuccess(data.message));
     } catch (error) {
