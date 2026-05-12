@@ -37,8 +37,19 @@ const Header = () => {
     return () => document.removeEventListener("click", handleClickOutside);
   }, [isMobileMenuOpen]);
 
+  useEffect(() => {
+    if (!isAuthenticated && !loading) {
+      if (
+        window.location.pathname !== "/sign-in" &&
+        window.location.pathname !== "/sign-up"
+      ) {
+        navigate("/sign-in");
+      }
+    }
+  }, [isAuthenticated, loading, navigate]);
+
   const handleLogout = async () => {
-    dispatch(logout());
+    await dispatch(logout()).unwrap();
     navigate("/sign-in");
     setIsMobileMenuOpen(false);
   };

@@ -49,9 +49,11 @@ const userSlice=createSlice({
             state.error=action.payload;
         },
         logoutSuccess:(state)=>{
-            state.loading=false;
-            state.isAuthenticated=false;
-            state.user=null;
+            state.loading = false;
+            state.isAuthenticated = false;
+            state.user = null;
+            state.message = action.payload;
+            state.error = null;
         },
         logoutFail:(state,action)=>{
             state.error=action.payload;

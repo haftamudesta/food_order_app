@@ -83,7 +83,6 @@ export const updateProfile = (userData) => async (dispatch) => {
         });
         dispatch(updateSuccess(data.data.user));
         
-        // Reset update state after 3 seconds
         setTimeout(() => {
             dispatch(updateReset());
         }, 3000);
