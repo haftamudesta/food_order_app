@@ -5,7 +5,7 @@ const Profile = () => {
   const { user } = useSelector((state) => state.user);
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
+    <div className="max-w-4xl mx-auto py-8 px-4 bg-sky-400">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Your Profile</h1>
       <div className="bg-white shadow rounded-lg p-6">
         <div className="flex items-center space-x-4 mb-6">

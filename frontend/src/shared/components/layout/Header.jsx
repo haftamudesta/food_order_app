@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../../../redux/actions/userAction";
@@ -7,6 +7,11 @@ import {
   XMarkIcon,
   ShoppingBagIcon,
   ArrowRightOnRectangleIcon,
+  UserIcon,
+  ClipboardDocumentListIcon,
+  BuildingStorefrontIcon,
+  HomeIcon,
+  InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 
 const Header = () => {
@@ -15,6 +20,8 @@ const Header = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const mobileMenuRef = useRef(null);
+  const menuButtonRef = useRef(null);
 
   const { isAuthenticated, user, loading } = useSelector((state) => state.user);
   const { itemCount } = useSelector((state) => state.cart || { itemCount: 0 });
@@ -29,28 +36,53 @@ const Header = () => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isMobileMenuOpen && !event.target.closest(".mobile-menu")) {
+      const isOutsideMenu =
+        mobileMenuRef.current && !mobileMenuRef.current.contains(event.target);
+      const isOutsideButton =
+        menuButtonRef.current && !menuButtonRef.current.contains(event.target);
+
+      if (isMobileMenuOpen && isOutsideMenu && isOutsideButton) {
         setIsMobileMenuOpen(false);
       }
     };
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isMobileMenuOpen]);
 
   useEffect(() => {
-    if (!isAuthenticated && !loading) {
-      if (
-        window.location.pathname !== "/sign-in" &&
-        window.location.pathname !== "/sign-up"
-      ) {
-        navigate("/sign-in");
+    const handleEscapeKey = (event) => {
+      if (event.key === "Escape" && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
       }
+    };
+
+    document.addEventListener("keydown", handleEscapeKey);
+    return () => document.removeEventListener("keydown", handleEscapeKey);
+  }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
     }
-  }, [isAuthenticated, loading, navigate]);
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isMobileMenuOpen]);
 
   const handleLogout = async () => {
     await dispatch(logout());
+    setIsMobileMenuOpen(false);
     navigate("/sign-in");
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
   };
 
@@ -70,9 +102,6 @@ const Header = () => {
       .slice(0, 2);
   };
 
-  console.log("isAuthenticated:", isAuthenticated);
-  console.log("user:", user);
-
   return (
     <>
       <nav
@@ -81,7 +110,7 @@ const Header = () => {
           ${
             isScrolled
               ? "bg-white shadow-lg"
-              : "bg-linear-to-r from-orange-600 to-orange-700"
+              : "bg-gradient-to-r from-orange-600 to-orange-700"
           }
         `}
       >
@@ -89,8 +118,8 @@ const Header = () => {
           <div className="flex justify-between items-center py-3 md:py-4">
             <Link
               to="/"
-              className="flex items-center space-x-2 text-xl font-bold transition-transform hover:scale-105"
-              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex items-center space-x-2 text-xl font-bold transition-transform hover:scale-105 z-50"
+              onClick={closeMobileMenu}
             >
               <span className={isScrolled ? "text-orange-600" : "text-white"}>
                 Food
@@ -101,26 +130,28 @@ const Header = () => {
             </Link>
 
             <div className="hidden md:flex items-center space-x-1">
-              {navLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  className={({ isActive }) => `
-                    px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2
-                    ${
-                      isActive
-                        ? isScrolled
-                          ? "bg-orange-100 text-orange-600"
-                          : "bg-white/20 text-white"
-                        : isScrolled
-                          ? "text-gray-700 hover:bg-orange-100 hover:text-orange-600"
-                          : "text-white/90 hover:bg-white/10"
-                    }
-                  `}
-                >
-                  <span>{link.label}</span>
-                </NavLink>
-              ))}
+              {navLinks.map((link) => {
+                return (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    className={({ isActive }) => `
+                      px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2
+                      ${
+                        isActive
+                          ? isScrolled
+                            ? "bg-orange-100 text-orange-600"
+                            : "bg-white/20 text-white"
+                          : isScrolled
+                            ? "text-gray-700 hover:bg-orange-100 hover:text-orange-600"
+                            : "text-white/90 hover:bg-white/10"
+                      }
+                    `}
+                  >
+                    <span>{link.label}</span>
+                  </NavLink>
+                );
+              })}
             </div>
 
             <div className="hidden md:flex items-center space-x-3">
@@ -145,22 +176,14 @@ const Header = () => {
               {isAuthenticated && user ? (
                 <div className="flex items-center space-x-2">
                   <div className="flex items-center gap-2">
-                    {user?.profile_pic?.url ? (
-                      <img
-                        src={user.profile_pic.url}
-                        alt={user.name}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div
-                        className={`
-                        w-8 h-8 rounded-full flex items-center justify-center font-semibold
+                    <div
+                      className={`
+                        w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm
                         ${isScrolled ? "bg-orange-100 text-orange-600" : "bg-white/20 text-white"}
                       `}
-                      >
-                        {getInitials(user?.name)}
-                      </div>
-                    )}
+                    >
+                      {getInitials(user?.name)}
+                    </div>
                     <span
                       className={`hidden lg:inline ${isScrolled ? "text-gray-700" : "text-white"}`}
                     >
@@ -227,167 +250,160 @@ const Header = () => {
               )}
             </div>
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className={`
-                md:hidden p-2 rounded-lg transition-colors
-                ${isScrolled ? "text-gray-700" : "text-white"}
-              `}
+              ref={menuButtonRef}
+              onClick={toggleMobileMenu}
+              className="md:hidden p-2 rounded-lg transition-colors z-50 relative bg-transparent"
+              aria-label="Toggle menu"
+              type="button"
             >
               {isMobileMenuOpen ? (
-                <XMarkIcon className="w-6 h-6" />
+                <XMarkIcon
+                  className={`w-6 h-6 ${isScrolled ? "text-gray-700" : "text-white"}`}
+                />
               ) : (
-                <Bars3Icon className="w-6 h-6" />
+                <Bars3Icon
+                  className={`w-6 h-6 ${isScrolled ? "text-gray-700" : "text-white"}`}
+                />
               )}
             </button>
           </div>
         </div>
       </nav>
       {isMobileMenuOpen && (
-        <div className="mobile-menu fixed inset-x-0 top-[60px] z-40 bg-white shadow-lg md:hidden animate-slideDown">
-          <div className="flex flex-col p-4 space-y-2">
-            {navLinks.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={({ isActive }) => `
-                  flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
-                  ${
-                    isActive
-                      ? "bg-orange-50 text-orange-600"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }
-                `}
+        <div className="fixed inset-0 z-40 md:hidden" style={{ top: "60px" }}>
+          <div
+            className="absolute inset-0 bg-black bg-opacity-50"
+            onClick={closeMobileMenu}
+          />
+          <div
+            ref={mobileMenuRef}
+            className="absolute top-0 right-0 bottom-0 w-80 bg-white shadow-xl overflow-y-auto"
+            style={{ zIndex: 45 }}
+          >
+            <div className="flex flex-col p-4 space-y-2">
+              {navLinks.map((link) => {
+                return (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    onClick={closeMobileMenu}
+                    className={({ isActive }) => `
+                      flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
+                      ${
+                        isActive
+                          ? "bg-orange-50 text-orange-600"
+                          : "text-gray-700 hover:bg-gray-50"
+                      }
+                    `}
+                  >
+                    <span className="font-medium">{link.label}</span>
+                  </NavLink>
+                );
+              })}
+
+              <div className="border-t border-gray-200 my-2" />
+              <Link
+                to="/cart"
+                onClick={closeMobileMenu}
+                className="flex items-center justify-between px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                <span className="font-medium">{link.label}</span>
-              </NavLink>
-            ))}
+                <div className="flex items-center gap-3">
+                  <ShoppingBagIcon className="w-5 h-5" />
+                  <span className="font-medium">Cart</span>
+                </div>
+                {itemCount > 0 && (
+                  <span className="bg-orange-600 text-white text-xs rounded-full px-2 py-1">
+                    {itemCount} items
+                  </span>
+                )}
+              </Link>
 
-            <hr className="my-2" />
-            <Link
-              to="/cart"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center justify-between px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <ShoppingBagIcon className="w-5 h-5" />
-                <span className="font-medium">Cart</span>
-              </div>
-              {itemCount > 0 && (
-                <span className="bg-orange-600 text-white text-xs rounded-full px-2 py-1">
-                  {itemCount} items
-                </span>
-              )}
-            </Link>
-
-            <hr className="my-2" />
-            {isAuthenticated && user ? (
-              <>
-                <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg">
-                  {user?.profile_pic?.url ? (
-                    <img
-                      src={user.profile_pic.url}
-                      alt={user.name}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                  ) : (
+              <div className="border-t border-gray-200 my-2" />
+              {isAuthenticated && user ? (
+                <>
+                  <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg">
                     <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-semibold text-lg">
                       {getInitials(user?.name)}
                     </div>
-                  )}
-                  <div>
-                    <p className="font-semibold text-gray-900">{user?.name}</p>
-                    <p className="text-sm text-gray-500">{user?.email}</p>
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        {user?.name}
+                      </p>
+                      <p className="text-sm text-gray-500">{user?.email}</p>
+                    </div>
                   </div>
-                </div>
 
-                <Link
-                  to="/profile"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50"
-                >
-                  <span>👤</span>
-                  <span>My Profile</span>
-                </Link>
-
-                <Link
-                  to="/orders"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50"
-                >
-                  <span>📦</span>
-                  <span>My Orders</span>
-                </Link>
-
-                {user?.role === "restaurant_owner" && (
                   <Link
-                    to="/owner/restaurants"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    to="/profile"
+                    onClick={closeMobileMenu}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50"
                   >
-                    <span>🏪</span>
-                    <span>My Restaurants</span>
+                    <UserIcon className="w-5 h-5" />
+                    <span>My Profile</span>
                   </Link>
-                )}
 
-                {user?.role === "admin" && (
                   <Link
-                    to="/admin/dashboard"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    to="/orders"
+                    onClick={closeMobileMenu}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50"
                   >
-                    <span>⚙️</span>
-                    <span>Admin Dashboard</span>
+                    <ClipboardDocumentListIcon className="w-5 h-5" />
+                    <span>My Orders</span>
                   </Link>
-                )}
 
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-                >
-                  <ArrowRightOnRectangleIcon className="w-5 h-5" />
-                  <span>Sign Out</span>
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/sign-in"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-orange-600 border border-orange-600 hover:bg-orange-50"
-                >
-                  <span>🔐</span>
-                  <span className="font-medium">Sign In</span>
-                </Link>
-                <Link
-                  to="/sign-up"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg bg-orange-600 text-white hover:bg-orange-700"
-                >
-                  <span>📝</span>
-                  <span className="font-medium">Sign Up</span>
-                </Link>
-              </>
-            )}
+                  {user?.role === "restaurant_owner" && (
+                    <Link
+                      to="/owner/restaurants"
+                      onClick={closeMobileMenu}
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50"
+                    >
+                      <BuildingStorefrontIcon className="w-5 h-5" />
+                      <span>My Restaurants</span>
+                    </Link>
+                  )}
+
+                  {user?.role === "admin" && (
+                    <Link
+                      to="/admin/dashboard"
+                      onClick={closeMobileMenu}
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50"
+                    >
+                      <BuildingStorefrontIcon className="w-5 h-5" />
+                      <span>Admin Dashboard</span>
+                    </Link>
+                  )}
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors w-full"
+                  >
+                    <ArrowRightOnRectangleIcon className="w-5 h-5" />
+                    <span>Sign Out</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/sign-in"
+                    onClick={closeMobileMenu}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-orange-600 border border-orange-600 hover:bg-orange-50"
+                  >
+                    <ArrowRightOnRectangleIcon className="w-5 h-5" />
+                    <span className="font-medium">Sign In</span>
+                  </Link>
+                  <Link
+                    to="/sign-up"
+                    onClick={closeMobileMenu}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg bg-orange-600 text-white hover:bg-orange-700"
+                  >
+                    <UserIcon className="w-5 h-5" />
+                    <span className="font-medium">Sign Up</span>
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-slideDown {
-          animation: slideDown 0.3s ease-out;
-        }
-      `}</style>
     </>
   );
 };

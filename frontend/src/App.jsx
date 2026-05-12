@@ -12,6 +12,7 @@ import SignIn from "./pages/user/SignIn";
 import ResetPassword from "./pages/user/ResetPassword";
 import Unauthorized from "./shared/components/fallback/Unauthorized";
 import RestaurantMenuPage from "./pages/restaurant/RestaurantMenuPage";
+import Profile from "./pages/user/Profile";
 import { loadUser } from "./redux/actions/userAction";
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
             <Route path="/sign-up" element={<SignUp />} exact />
             <Route path="/sign-in" element={<SignIn />} exact />
             <Route path="/forgot-password" element={<ResetPassword />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/terms" element={<TermsService />} exact />
             <Route path="/privacy" element={<PrivacyPolicy />} exact />
             <Route path="/unauthorized" element={<Unauthorized />} />
