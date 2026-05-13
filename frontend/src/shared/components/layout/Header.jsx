@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../../../redux/actions/userAction";
+import { getCart } from "../../../redux/actions/cartAction";
 import {
   Bars3Icon,
   XMarkIcon,
@@ -10,8 +11,6 @@ import {
   UserIcon,
   ClipboardDocumentListIcon,
   BuildingStorefrontIcon,
-  HomeIcon,
-  InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 
 const Header = () => {
@@ -24,7 +23,25 @@ const Header = () => {
   const menuButtonRef = useRef(null);
 
   const { isAuthenticated, user, loading } = useSelector((state) => state.user);
-  const { itemCount } = useSelector((state) => state.cart || { itemCount: 0 });
+  const { itemCount = 0, items = [] } = useSelector(
+    (state) => state.cart || { itemCount: 0, items: [] },
+  );
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(getCart());
+    }
+  }, [dispatch, isAuthenticated]);
+
+  // Refresh cart when items change
+  useEffect(() => {
+    if (isAuthenticated) {
+      const interval = setInterval(() => {
+        dispatch(getCart());
+      }, 30000); // refresh every 30 seconds
+      return () => clearInterval(interval);
+    }
+  }, [dispatch, isAuthenticated]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -102,6 +119,8 @@ const Header = () => {
       .slice(0, 2);
   };
 
+  console.log("Cart item count:", itemCount); // Debug log
+
   return (
     <>
       <nav
@@ -155,6 +174,7 @@ const Header = () => {
             </div>
 
             <div className="hidden md:flex items-center space-x-3">
+              {/* Cart Icon */}
               <Link
                 to="/cart"
                 className={`
@@ -168,11 +188,12 @@ const Header = () => {
               >
                 <ShoppingBagIcon className="w-6 h-6" />
                 {itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {itemCount > 9 ? "9+" : itemCount}
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+                    {itemCount > 99 ? "99+" : itemCount}
                   </span>
                 )}
               </Link>
+
               {isAuthenticated && user ? (
                 <div className="flex items-center space-x-2">
                   <div className="flex items-center gap-2">
@@ -249,6 +270,7 @@ const Header = () => {
                 </div>
               )}
             </div>
+
             <button
               ref={menuButtonRef}
               onClick={toggleMobileMenu}
@@ -269,6 +291,7 @@ const Header = () => {
           </div>
         </div>
       </nav>
+
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-40 md:hidden" style={{ top: "60px" }}>
           <div
@@ -302,6 +325,8 @@ const Header = () => {
               })}
 
               <div className="border-t border-gray-200 my-2" />
+
+              {/* Mobile Cart Link */}
               <Link
                 to="/cart"
                 onClick={closeMobileMenu}
@@ -312,13 +337,14 @@ const Header = () => {
                   <span className="font-medium">Cart</span>
                 </div>
                 {itemCount > 0 && (
-                  <span className="bg-orange-600 text-white text-xs rounded-full px-2 py-1">
-                    {itemCount} items
+                  <span className="bg-orange-600 text-white text-xs rounded-full px-2 py-1 font-semibold">
+                    {itemCount} {itemCount === 1 ? "item" : "items"}
                   </span>
                 )}
               </Link>
 
               <div className="border-t border-gray-200 my-2" />
+
               {isAuthenticated && user ? (
                 <>
                   <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg">
@@ -372,6 +398,7 @@ const Header = () => {
                       <span>Admin Dashboard</span>
                     </Link>
                   )}
+
                   <button
                     onClick={handleLogout}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors w-full"

@@ -17,6 +17,7 @@ export const addToCart = createAsyncThunk(
   "cart/addToCart",
   async ({ foodItemId, quantity = 1, specialInstructions = "" }, { rejectWithValue }) => {
     try {
+      console.log("Sending to cart:", { foodItemId, quantity, specialInstructions });
       const { data } = await axiosInstance.post("/v1/cart/add", {
         foodItemId,
         quantity,

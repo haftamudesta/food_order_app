@@ -14,6 +14,7 @@ import Unauthorized from "./shared/components/fallback/Unauthorized";
 import RestaurantMenuPage from "./pages/restaurant/RestaurantMenuPage";
 import Profile from "./pages/user/Profile";
 import { loadUser } from "./redux/actions/userAction";
+import CartPage from "./pages/cart/CartPage";
 
 function App() {
   const dispatch = useDispatch();
@@ -36,6 +37,7 @@ function App() {
               element={<Home />}
               exact
             />
+            <Route path="/cart" element={<CartPage />} exact />
             <Route path="/restaurant/:id" element={<RestaurantMenuPage />} />
             <Route path="/sign-up" element={<SignUp />} exact />
             <Route path="/sign-in" element={<SignIn />} exact />

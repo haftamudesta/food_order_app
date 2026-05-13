@@ -23,7 +23,8 @@ const cartItemSchema = new mongoose.Schema({
   specialInstructions: {
     type: String,
     maxlength: 200,
-    trim: true
+    trim: true,
+    default: ""
   },
   addedAt: {
     type: Date,
@@ -58,12 +59,35 @@ const cartSchema = new mongoose.Schema({
   },
   notes: {
     type: String,
-    maxlength: 500
+    maxlength: 500,
+    default: null
   }
 }, {
   timestamps: true
 });
 
+cartSchema.methods.calculateTotals = function() {
+  let itemCount = 0;
+  let subtotal = 0;
+  
+  for (let i = 0; i < this.items.length; i++) {
+    const item = this.items[i];
+    itemCount += item.quantity || 0;
+    subtotal += item.totalPrice || (item.price * item.quantity) || 0;
+  }
+  
+  const tax = subtotal * 0.1;
+  const deliveryFee = subtotal > 50 ? 0 : 5;
+  const total = subtotal + tax + deliveryFee - (this.discount || 0);
+  
+  return {
+    itemCount,
+    subtotal,
+    tax,
+    deliveryFee,
+    total
+  };
+};
 
 cartSchema.methods.clearCart = async function() {
   this.items = [];
@@ -78,7 +102,10 @@ cartSchema.methods.clearCart = async function() {
 cartSchema.statics.getOrCreateCart = async function(userId) {
   let cart = await this.findOne({ user: userId });
   if (!cart) {
-    cart = await this.create({ user: userId, items: [] });
+    cart = await this.create({ 
+      user: userId, 
+      items: []
+    });
   }
   return cart;
 };
