@@ -18,6 +18,7 @@ import CartPage from "./pages/cart/CartPage";
 import { Toaster } from "react-hot-toast";
 import MyOrders from "./pages/orders/MyOrders";
 import OrderDetails from "./pages/orders/OrderDetails";
+import OrderSuccess from "./pages/cart/OrderSuccess";
 
 function App() {
   const dispatch = useDispatch();
@@ -95,6 +96,7 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/orders" element={<MyOrders />} />
             <Route path="/orders/:id" element={<OrderDetails />} />
+            <Route path="/order-success" element={<OrderDetails />} />
             <Route path="/terms" element={<TermsService />} exact />
             <Route path="/privacy" element={<PrivacyPolicy />} exact />
             <Route path="/unauthorized" element={<Unauthorized />} />
