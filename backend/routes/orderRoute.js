@@ -11,9 +11,7 @@ router.put("/:id/cancel", orderControllers.cancelOrder);
 router.put("/admin/:id/status", orderControllers.updateOrderStatus
 );
 router.delete(
-  "/admin/:id", 
-  isAuthenticatedUser, 
-  authorizeRoles("admin"), 
+  "/admin/:id",
   orderControllers.deleteOrder
 );
 router.get(
