@@ -15,6 +15,7 @@ import RestaurantMenuPage from "./pages/restaurant/RestaurantMenuPage";
 import Profile from "./pages/user/Profile";
 import { loadUser } from "./redux/actions/userAction";
 import CartPage from "./pages/cart/CartPage";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   const dispatch = useDispatch();
@@ -27,6 +28,53 @@ function App() {
   }, [dispatch]);
   return (
     <>
+      <Toaster
+        position="top-right"
+        reverseOrder={false}
+        gutter={8}
+        containerClassName=""
+        containerStyle={{}}
+        toastOptions={{
+          // Default options for all toasts
+          duration: 3000,
+          style: {
+            background: "#363636",
+            color: "#fff",
+            padding: "12px",
+            borderRadius: "8px",
+            fontSize: "14px",
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: "#10B981",
+              secondary: "#fff",
+            },
+            style: {
+              background: "#10B981",
+              color: "#fff",
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: "#EF4444",
+              secondary: "#fff",
+            },
+            style: {
+              background: "#EF4444",
+              color: "#fff",
+            },
+          },
+          loading: {
+            duration: Infinity,
+            style: {
+              background: "#3B82F6",
+              color: "#fff",
+            },
+          },
+        }}
+      />
       <Router>
         <Header />
         <div>
