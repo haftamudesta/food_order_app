@@ -238,12 +238,12 @@ const RestaurantMenuPage = () => {
           <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/50 to-transparent" />
         </div>
 
-        <div className="absolute top-4 left-4 z-10">
+        <div className="absolute top-24 left-12 z-10 bg-red-600">
           <Link
             to="/restaurants"
-            className="inline-flex items-center gap-2 bg-white/90 backdrop-blur-sm text-gray-800 px-4 py-2 rounded-lg hover:bg-white transition-colors shadow-md"
+            className="inline-flex items-center gap-2 bg-white/90 backdrop-blur-sm text-red-500 px-4 py-2 rounded-lg hover:bg-white transition-colors shadow-md"
           >
-            <ArrowLeftIcon className="w-5 h-5" />
+            <ArrowLeftIcon className="w-5 h-5 " />
             <span>Back to Restaurants</span>
           </Link>
         </div>

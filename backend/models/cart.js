@@ -39,31 +39,18 @@ const cartSchema = new mongoose.Schema({
     unique: true,
     index: true
   },
-  items: [cartItemSchema],
+  items: {
+    type: [cartItemSchema],
+    default: []
+  },
   restaurant: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Restaurant',
-    required: false
-  },
-  subtotal: {
-    type: Number,
-    default: 0
-  },
-  tax: {
-    type: Number,
-    default: 0
-  },
-  deliveryFee: {
-    type: Number,
-    default: 0
-  },
-  total: {
-    type: Number,
-    default: 0
+    default: null
   },
   couponCode: {
     type: String,
-    trim: true
+    default: null
   },
   discount: {
     type: Number,
@@ -74,40 +61,24 @@ const cartSchema = new mongoose.Schema({
     maxlength: 500
   }
 }, {
-  timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  timestamps: true
 });
 
-cartSchema.pre('save', function(next) {
-  this.subtotal = this.items.reduce((sum, item) => sum + item.totalPrice, 0);
-  this.tax = this.subtotal * 0.1;
-  this.deliveryFee = this.subtotal < 50 ? 5 : 0;
-  this.total = this.subtotal + this.tax + this.deliveryFee - this.discount;
-  next();
-});
 
-cartSchema.virtual('itemCount').get(function() {
-  return this.items.reduce((sum, item) => sum + item.quantity, 0);
-});
-
-cartSchema.methods.isSameRestaurant = function(restaurantId) {
-  return !this.restaurant || this.restaurant.toString() === restaurantId;
-};
-
-cartSchema.methods.clearCart = function() {
+cartSchema.methods.clearCart = async function() {
   this.items = [];
   this.restaurant = null;
   this.couponCode = null;
   this.discount = 0;
   this.notes = null;
-  return this.save();
+  await this.save();
+  return this;
 };
 
 cartSchema.statics.getOrCreateCart = async function(userId) {
-  let cart = await this.findOne({ user: userId }).populate('items.foodItem');
+  let cart = await this.findOne({ user: userId });
   if (!cart) {
-    cart = await this.create({ user: userId });
+    cart = await this.create({ user: userId, items: [] });
   }
   return cart;
 };

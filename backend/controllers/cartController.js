@@ -3,6 +3,9 @@ const AppError = require("../utils/errorHandler");
 const Cart = require("../models/cart");
 const FoodItem = require("../models/foodItem");
 
+
+
+
 exports.getCart = catchAsyncErrors(async (req, res, next) => {
   const cart = await Cart.findOne({ user: req.user.id })
     .populate('items.foodItem')
@@ -30,6 +33,14 @@ exports.getCart = catchAsyncErrors(async (req, res, next) => {
 
 exports.addToCart = catchAsyncErrors(async (req, res, next) => {
   const { foodItemId, quantity = 1, specialInstructions } = req.body;
+  console.log("=== ADD TO CART DEBUG ===");
+  console.log("foodItemId:", foodItemId);
+  console.log("quantity:", quantity);
+  console.log("userId:", req.user._id);
+  
+  if (quantity < 1) {
+    return next(new AppError("Quantity must be at least 1", 400));
+  }
   
   if (quantity < 1) {
     return next(new AppError("Quantity must be at least 1", 400));
