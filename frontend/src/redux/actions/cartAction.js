@@ -25,7 +25,6 @@ export const addToCart = createAsyncThunk(
         specialInstructions
       });
       
-      // Show success toast
       toast.success("Item added to cart successfully!", {
         duration: 3000,
         icon: '🛒',
@@ -36,7 +35,6 @@ export const addToCart = createAsyncThunk(
       const errorMessage = error.response?.data?.message || error.message;
       console.error("Add to cart error:", errorMessage);
       
-      // Handle different restaurant error specifically
       if (errorMessage.includes("different restaurants")) {
         toast.error(
           "Cart cleared! You can now add items from this restaurant.",
