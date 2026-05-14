@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
-import { useDispatch } from "react-redux";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import "./App.css";
 import Header from "./shared/components/layout/Header";
 import Footer from "./shared/components/layout/Footer";
@@ -21,16 +21,34 @@ import OrderDetails from "./pages/orders/OrderDetails";
 import OrderSuccess from "./pages/cart/OrderSuccess";
 import PaymentError from "./pages/paymant/PaymentError";
 import CheckoutPage from "./pages/checkout/CheckoutPage";
+import LoadingSpinner from "./components/ui/LoadingSpinner";
 
 function App() {
   const dispatch = useDispatch();
+  const { loading, isAuthenticated } = useSelector((state) => state.user);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      dispatch(loadUser());
-    }
+    const loadUserData = async () => {
+      const token = localStorage.getItem("token");
+
+      if (token) {
+        await dispatch(loadUser());
+      }
+      setInitialLoadComplete(true);
+    };
+
+    loadUserData();
   }, [dispatch]);
+
+  if (!initialLoadComplete && loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="large" />
+      </div>
+    );
+  }
+
   return (
     <>
       <Toaster
@@ -40,7 +58,6 @@ function App() {
         containerClassName=""
         containerStyle={{}}
         toastOptions={{
-          // Default options for all toasts
           duration: 3000,
           style: {
             background: "#363636",
@@ -82,27 +99,24 @@ function App() {
       />
       <Router>
         <Header />
-        <div>
+        <div className="pt-16">
           <Routes>
-            <Route path="/" element={<Home />} exact />
-            <Route
-              path="/restaurant/search/:keyword"
-              element={<Home />}
-              exact
-            />
-            <Route path="/cart" element={<CartPage />} exact />
+            <Route path="/" element={<Home />} />
+            <Route path="/restaurant/search/:keyword" element={<Home />} />
+            <Route path="/restaurants" element={<Home />} />
+            <Route path="/cart" element={<CartPage />} />
             <Route path="/restaurant/:id" element={<RestaurantMenuPage />} />
-            <Route path="/sign-up" element={<SignUp />} exact />
-            <Route path="/sign-in" element={<SignIn />} exact />
+            <Route path="/sign-up" element={<SignUp />} />
+            <Route path="/sign-in" element={<SignIn />} />
             <Route path="/forgot-password" element={<ResetPassword />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/orders" element={<MyOrders />} />
             <Route path="/orders/:id" element={<OrderDetails />} />
-            <Route path="/order-success" element={<OrderSuccess />} />
+            <Route path="/order-success/:orderId?" element={<OrderSuccess />} />
             <Route path="/payment/error/:orderId?" element={<PaymentError />} />
-            <Route path="/checkout" element={<PaymentError />} />
-            <Route path="/terms" element={<TermsService />} exact />
-            <Route path="/privacy" element={<PrivacyPolicy />} exact />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/terms" element={<TermsService />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
           </Routes>
         </div>

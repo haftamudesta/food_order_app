@@ -5,7 +5,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import StripePaymentForm from "@/shared/components/payment/StripePaymentForm";
 import { createOrder } from "../../redux/actions/orderAction";
-import { clearCart } from "@/redux/actions/cartAction";
+import { clearCart, getCart } from "@/redux/actions/cartAction";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import {
   MapPinIcon,
@@ -13,18 +13,28 @@ import {
   ShoppingBagIcon,
 } from "@heroicons/react/24/outline";
 
-console.log();
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 const CheckoutPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { cart, items, total } = useSelector((state) => state.cart);
+
+  const cartState = useSelector((state) => state.cart);
   const { user } = useSelector((state) => state.user);
   const { loading: orderLoading } = useSelector((state) => state.order);
 
+  const items = cartState?.items || [];
+  const restaurant = cartState?.restaurant;
+  const subtotal = cartState?.subtotal || 0;
+  const tax = cartState?.tax || 0;
+  const deliveryFee = cartState?.deliveryFee || 0;
+  const discount = cartState?.discount || 0;
+  const total = cartState?.total || 0;
+  const itemCount = cartState?.itemCount || 0;
+
   const [orderId, setOrderId] = useState(null);
   const [creatingOrder, setCreatingOrder] = useState(false);
+  const [loadingCart, setLoadingCart] = useState(true);
   const [deliveryAddress, setDeliveryAddress] = useState({
     address: "",
     city: "",
@@ -34,10 +44,29 @@ const CheckoutPage = () => {
   });
 
   useEffect(() => {
-    if (items.length === 0 && !creatingOrder) {
+    const loadCart = async () => {
+      setLoadingCart(true);
+      await dispatch(getCart());
+      setLoadingCart(false);
+    };
+    loadCart();
+  }, [dispatch]);
+
+  useEffect(() => {
+    if ((!items || items.length === 0) && !creatingOrder && !loadingCart) {
       navigate("/cart");
     }
-  }, [items, navigate, creatingOrder]);
+  }, [items, navigate, creatingOrder, loadingCart]);
+
+  useEffect(() => {
+    console.log("=== CheckoutPage Debug ===");
+    console.log("Cart State:", cartState);
+    console.log("Items:", items);
+    console.log("Restaurant:", restaurant);
+    console.log("Restaurant ID:", restaurant?._id);
+    console.log("Subtotal:", subtotal);
+    console.log("Total:", total);
+  }, [cartState, items, restaurant, subtotal, total]);
 
   const handleAddressChange = (e) => {
     setDeliveryAddress({
@@ -47,6 +76,11 @@ const CheckoutPage = () => {
   };
 
   const handleCreateOrder = async () => {
+    console.log("=== Creating Order ===");
+    console.log("Delivery Address:", deliveryAddress);
+    console.log("Restaurant:", restaurant);
+    console.log("Items:", items);
+
     if (
       !deliveryAddress.address ||
       !deliveryAddress.city ||
@@ -56,8 +90,18 @@ const CheckoutPage = () => {
       return;
     }
 
-    if (!cart.restaurant?._id) {
-      alert("Restaurant information is missing");
+    if (!restaurant?._id) {
+      console.error("Restaurant missing from cart:", cartState);
+      alert(
+        "Restaurant information is missing. Please add items from a restaurant to your cart first.",
+      );
+      navigate("/restaurants");
+      return;
+    }
+
+    if (!items || items.length === 0) {
+      alert("Your cart is empty. Please add items to your cart first.");
+      navigate("/cart");
       return;
     }
 
@@ -71,25 +115,26 @@ const CheckoutPage = () => {
           phoneNo: deliveryAddress.phoneNo,
           country: deliveryAddress.country,
         },
-        restaurant: cart.restaurant._id,
+        restaurant: restaurant._id,
         orderItems: items.map((item) => ({
           name: item.foodItem?.name,
           quantity: item.quantity,
           image: item.foodItem?.image?.url || item.foodItem?.image || "",
           price: item.price,
-          foodItem: item.foodItem._id,
+          foodItem: item.foodItem?._id,
         })),
-        itemsPrice:
-          cart.subtotal || total - (cart.tax || 0) - (cart.deliveryFee || 0),
-        taxPrice: cart.tax || 0,
-        deliveryCharge: cart.deliveryFee || 0,
+        itemsPrice: subtotal,
+        taxPrice: tax,
+        deliveryCharge: deliveryFee,
         finalTotal: total,
         paymentInfo: {
           status: "pending",
         },
       };
 
+      console.log("Order Data being sent:", orderData);
       const result = await dispatch(createOrder(orderData)).unwrap();
+      console.log("Order created:", result);
       setOrderId(result._id);
     } catch (error) {
       console.error("Failed to create order:", error);
@@ -111,7 +156,15 @@ const CheckoutPage = () => {
     );
   };
 
-  if (creatingOrder || orderLoading) {
+  if (loadingCart || creatingOrder || orderLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingSpinner size="large" />
+      </div>
+    );
+  }
+
+  if (!cartState) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <LoadingSpinner size="large" />
@@ -125,7 +178,6 @@ const CheckoutPage = () => {
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Order Summary */}
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex items-center gap-2 mb-4">
@@ -133,78 +185,83 @@ const CheckoutPage = () => {
                 <h2 className="text-xl font-semibold">Order Summary</h2>
               </div>
 
+              {restaurant && (
+                <div className="mb-4 p-3 bg-orange-50 rounded-lg">
+                  <p className="text-sm text-gray-500">Restaurant</p>
+                  <p className="font-semibold text-gray-900">
+                    {restaurant.name}
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {items.map((item) => (
-                  <div
-                    key={item._id}
-                    className="flex justify-between items-center"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                        {item.foodItem?.image?.url ? (
-                          <img
-                            src={item.foodItem.image.url}
-                            alt={item.foodItem.name}
-                            className="w-10 h-10 object-cover rounded"
-                          />
-                        ) : (
-                          <ShoppingBagIcon className="w-5 h-5 text-gray-400" />
-                        )}
+                {items && items.length > 0 ? (
+                  items.map((item) => (
+                    <div
+                      key={item._id}
+                      className="flex justify-between items-center"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                          {item.foodItem?.image?.url ? (
+                            <img
+                              src={item.foodItem.image.url}
+                              alt={item.foodItem.name}
+                              className="w-10 h-10 object-cover rounded"
+                            />
+                          ) : (
+                            <ShoppingBagIcon className="w-5 h-5 text-gray-400" />
+                          )}
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-900">
+                            {item.quantity}x {item.foodItem?.name}
+                          </span>
+                          <p className="text-xs text-gray-500">
+                            ${item.price?.toFixed(2) || "0.00"} each
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-medium text-gray-900">
-                          {item.quantity}x {item.foodItem?.name}
-                        </span>
-                        <p className="text-xs text-gray-500">
-                          ${item.price.toFixed(2)} each
-                        </p>
-                      </div>
+                      <span className="font-semibold text-gray-900">
+                        ${((item.price || 0) * (item.quantity || 0)).toFixed(2)}
+                      </span>
                     </div>
-                    <span className="font-semibold text-gray-900">
-                      ${(item.price * item.quantity).toFixed(2)}
-                    </span>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center">
+                    Your cart is empty
+                  </p>
+                )}
               </div>
 
               <div className="border-t border-gray-200 mt-4 pt-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Subtotal</span>
-                  <span className="text-gray-900">
-                    ${(cart.subtotal || 0).toFixed(2)}
-                  </span>
+                  <span className="text-gray-900">${subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Tax (10%)</span>
-                  <span className="text-gray-900">
-                    ${(cart.tax || 0).toFixed(2)}
-                  </span>
+                  <span className="text-gray-900">${tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Delivery Fee</span>
                   <span className="text-gray-900">
-                    {cart.deliveryFee === 0
-                      ? "Free"
-                      : `$${(cart.deliveryFee || 0).toFixed(2)}`}
+                    {deliveryFee === 0 ? "Free" : `$${deliveryFee.toFixed(2)}`}
                   </span>
                 </div>
-                {cart.discount > 0 && (
+                {discount > 0 && (
                   <div className="flex justify-between text-sm text-green-600">
                     <span>Discount</span>
-                    <span>-${cart.discount.toFixed(2)}</span>
+                    <span>-${discount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200">
                   <span>Total</span>
-                  <span className="text-orange-600">
-                    ${(total || 0).toFixed(2)}
-                  </span>
+                  <span className="text-orange-600">${total.toFixed(2)}</span>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Right Column - Delivery & Payment */}
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex items-center gap-2 mb-4">
@@ -270,7 +327,12 @@ const CheckoutPage = () => {
               {!orderId ? (
                 <button
                   onClick={handleCreateOrder}
-                  disabled={creatingOrder}
+                  disabled={
+                    creatingOrder ||
+                    !items ||
+                    items.length === 0 ||
+                    !restaurant?._id
+                  }
                   className="w-full bg-orange-600 text-white py-3 rounded-lg font-semibold hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {creatingOrder ? "Creating Order..." : "Proceed to Payment"}

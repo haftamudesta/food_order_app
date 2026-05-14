@@ -4,11 +4,15 @@ const User = require("../models/user");
 exports.protect = async (req, res, next) => {
     try {
         let token;
+        
         if (req.cookies && req.cookies.jwt) {
             token = req.cookies.jwt;
-        } else if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+        } 
+        else if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
             token = req.headers.authorization.split(" ")[1];
         }
+
+        console.log("Token present:", !!token);
 
         if (!token) {
             return res.status(401).json({
@@ -18,8 +22,9 @@ exports.protect = async (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        console.log("Decoded token:", decoded);
 
-        const user = await User.findById(decoded.id).select("-password");
+        const user = await User.findById(decoded.id || decoded.userId).select("-password");
 
         if (!user) {
             return res.status(401).json({
@@ -36,6 +41,8 @@ exports.protect = async (req, res, next) => {
         }
 
         req.user = user;
+        console.log("User attached to request:", req.user._id);
+        
         next();
 
     } catch (error) {
@@ -57,4 +64,3 @@ exports.protect = async (req, res, next) => {
         });
     }
 };
-

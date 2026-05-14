@@ -17,7 +17,7 @@ export const myOrders = createAsyncThunk(
   "order/myOrders",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await axiosInstance.get("/v1/orders/me/myoreders");
+      const { data } = await axiosInstance.get("/v1/orders/me/myorders");
       return data.order;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
@@ -37,7 +37,6 @@ export const getAllOrders = createAsyncThunk(
   }
 );
 
-
 export const createOrder = createAsyncThunk(
   "order/createOrder",
   async (orderData, { rejectWithValue }) => {
@@ -54,7 +53,7 @@ export const updateOrderStatus = createAsyncThunk(
   "order/updateOrderStatus",
   async ({ id, status }, { rejectWithValue }) => {
     try {
-      const { data } = await axiosInstance.put(`/v1/orders/${id}/status`, { status });
+      const { data } = await axiosInstance.put(`/v1/orders/admin/${id}/status`, { status });
       return data.order;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
@@ -78,14 +77,13 @@ export const deleteOrder = createAsyncThunk(
   "order/deleteOrder",
   async (id, { rejectWithValue }) => {
     try {
-      await axiosInstance.delete(`/v1/orders/${id}`);
+      await axiosInstance.delete(`/v1/orders/admin/${id}`);
       return id;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
-
 
 export const getOrderStatistics = createAsyncThunk(
   "order/getOrderStatistics",
@@ -95,11 +93,27 @@ export const getOrderStatistics = createAsyncThunk(
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
       
-      const { data } = await axiosInstance.get(`/v1/orders/statistics?${params}`);
-      return data;
+      const { data } = await axiosInstance.get(`/v1/orders/admin/statistics?${params}`);
+      return data.statistics || data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
 
+export const getRecentOrders = createAsyncThunk(
+  "order/getRecentOrders",
+  async ({ limit = 10, page = 1 } = {}, { rejectWithValue }) => {
+    try {
+      const { data } = await axiosInstance.get(`/v1/orders/recent?limit=${limit}&page=${page}`);
+      return {
+        orders: data.orders,
+        total: data.total,
+        page: data.page,
+        pages: data.pages
+      };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);

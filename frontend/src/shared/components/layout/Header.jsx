@@ -11,16 +11,20 @@ import {
   UserIcon,
   ClipboardDocumentListIcon,
   BuildingStorefrontIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const mobileMenuRef = useRef(null);
   const menuButtonRef = useRef(null);
+  const dropdownRef = useRef(null);
+  const dropdownButtonRef = useRef(null);
 
   const { isAuthenticated, user, loading } = useSelector((state) => state.user);
   const { itemCount = 0, items = [] } = useSelector(
@@ -33,12 +37,11 @@ const Header = () => {
     }
   }, [dispatch, isAuthenticated]);
 
-  // Refresh cart when items change
   useEffect(() => {
     if (isAuthenticated) {
       const interval = setInterval(() => {
         dispatch(getCart());
-      }, 30000); // refresh every 30 seconds
+      }, 30000);
       return () => clearInterval(interval);
     }
   }, [dispatch, isAuthenticated]);
@@ -68,15 +71,33 @@ const Header = () => {
   }, [isMobileMenuOpen]);
 
   useEffect(() => {
+    const handleClickOutside = (event) => {
+      const isOutsideDropdown =
+        dropdownRef.current && !dropdownRef.current.contains(event.target);
+      const isOutsideButton =
+        dropdownButtonRef.current &&
+        !dropdownButtonRef.current.contains(event.target);
+
+      if (isDropdownOpen && isOutsideDropdown && isOutsideButton) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isDropdownOpen]);
+
+  useEffect(() => {
     const handleEscapeKey = (event) => {
-      if (event.key === "Escape" && isMobileMenuOpen) {
+      if (event.key === "Escape") {
         setIsMobileMenuOpen(false);
+        setIsDropdownOpen(false);
       }
     };
 
     document.addEventListener("keydown", handleEscapeKey);
     return () => document.removeEventListener("keydown", handleEscapeKey);
-  }, [isMobileMenuOpen]);
+  }, []);
 
   useEffect(() => {
     if (isMobileMenuOpen) {
@@ -92,6 +113,7 @@ const Header = () => {
   const handleLogout = async () => {
     await dispatch(logout());
     setIsMobileMenuOpen(false);
+    setIsDropdownOpen(false);
     navigate("/sign-in");
   };
 
@@ -101,6 +123,14 @@ const Header = () => {
 
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
+  };
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
+  const closeDropdown = () => {
+    setIsDropdownOpen(false);
   };
 
   const navLinks = [
@@ -119,6 +149,27 @@ const Header = () => {
       .slice(0, 2);
   };
 
+  if (loading) {
+    return (
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white shadow-lg`}
+      >
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center py-3 md:py-4">
+            <Link
+              to="/"
+              className="flex items-center space-x-2 text-xl font-bold"
+            >
+              <span className="text-orange-600">Food</span>
+              <span className="text-gray-700">Delivery</span>
+            </Link>
+            <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
   return (
     <>
       <nav
@@ -127,7 +178,7 @@ const Header = () => {
           ${
             isScrolled
               ? "bg-white shadow-lg"
-              : "bg-linear-to-r from-orange-600 to-orange-700"
+              : "bg-gradient-to-r from-orange-600 to-orange-700"
           }
         `}
       >
@@ -172,7 +223,6 @@ const Header = () => {
             </div>
 
             <div className="hidden md:flex items-center space-x-3">
-              {/* Cart Icon */}
               <Link
                 to="/cart"
                 className={`
@@ -193,8 +243,19 @@ const Header = () => {
               </Link>
 
               {isAuthenticated && user ? (
-                <div className="flex items-center space-x-2">
-                  <div className="flex items-center gap-2">
+                <div className="relative">
+                  <button
+                    ref={dropdownButtonRef}
+                    onClick={toggleDropdown}
+                    className={`
+                      flex items-center gap-2 px-3 py-2 rounded-lg transition-colors
+                      ${
+                        isScrolled
+                          ? "text-gray-700 hover:bg-orange-100 hover:text-orange-600"
+                          : "text-white hover:bg-white/10"
+                      }
+                    `}
+                  >
                     <div
                       className={`
                         w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm
@@ -203,39 +264,83 @@ const Header = () => {
                     >
                       {getInitials(user?.name)}
                     </div>
-                    <span
-                      className={`hidden lg:inline ${isScrolled ? "text-gray-700" : "text-white"}`}
-                    >
+                    <span className="hidden lg:inline">
                       {user?.name?.split(" ")[0]}
                     </span>
-                  </div>
-                  <Link
-                    to="/profile"
-                    className={`
-                      px-3 py-2 rounded-lg transition-colors text-sm font-medium
-                      ${
-                        isScrolled
-                          ? "text-gray-700 hover:bg-orange-100 hover:text-orange-600"
-                          : "text-white hover:bg-white/10"
-                      }
-                    `}
-                  >
-                    Profile
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className={`
-                      flex items-center gap-1 px-3 py-2 rounded-lg transition-colors text-sm font-medium
-                      ${
-                        isScrolled
-                          ? "text-red-600 hover:bg-red-50"
-                          : "text-white hover:bg-white/10"
-                      }
-                    `}
-                  >
-                    <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                    Sign Out
+                    <ChevronDownIcon
+                      className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`}
+                    />
                   </button>
+
+                  <div
+                    ref={dropdownRef}
+                    className={`
+                      absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50
+                      transition-all duration-300 ease-out origin-top-right
+                      ${
+                        isDropdownOpen
+                          ? "opacity-100 scale-100 translate-x-0"
+                          : "opacity-0 scale-95 translate-x-4 pointer-events-none"
+                      }
+                    `}
+                  >
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="font-semibold text-gray-900">
+                        {user?.name}
+                      </p>
+                      <p className="text-sm text-gray-500">{user?.email}</p>
+                    </div>
+
+                    <Link
+                      to="/profile"
+                      onClick={closeDropdown}
+                      className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                    >
+                      <UserIcon className="w-5 h-5" />
+                      <span>My Profile</span>
+                    </Link>
+
+                    <Link
+                      to="/orders"
+                      onClick={closeDropdown}
+                      className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                    >
+                      <ClipboardDocumentListIcon className="w-5 h-5" />
+                      <span>My Orders</span>
+                    </Link>
+
+                    {user?.role === "restaurant_owner" && (
+                      <Link
+                        to="/owner/restaurants"
+                        onClick={closeDropdown}
+                        className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                      >
+                        <BuildingStorefrontIcon className="w-5 h-5" />
+                        <span>My Restaurants</span>
+                      </Link>
+                    )}
+
+                    {user?.role === "admin" && (
+                      <Link
+                        to="/admin/dashboard"
+                        onClick={closeDropdown}
+                        className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                      >
+                        <BuildingStorefrontIcon className="w-5 h-5" />
+                        <span>Admin Dashboard</span>
+                      </Link>
+                    )}
+
+                    <div className="border-t border-gray-100 my-1"></div>
+
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-3 px-4 py-2 w-full text-left text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <ArrowRightOnRectangleIcon className="w-5 h-5" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center space-x-2">
@@ -324,7 +429,6 @@ const Header = () => {
 
               <div className="border-t border-gray-200 my-2" />
 
-              {/* Mobile Cart Link */}
               <Link
                 to="/cart"
                 onClick={closeMobileMenu}
@@ -429,6 +533,35 @@ const Header = () => {
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes slideFromLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-20px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+        .animate-slideDown {
+          animation: slideDown 0.2s ease-out;
+        }
+        .animate-slideFromLeft {
+          animation: slideFromLeft 0.3s ease-out;
+        }
+      `}</style>
     </>
   );
 };

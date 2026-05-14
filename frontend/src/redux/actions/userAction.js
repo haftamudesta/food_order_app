@@ -12,9 +12,9 @@ import {
     updateReset,
     clearError,
     loadUserSuccess
- } from "../slices/userSlice";
+} from "../slices/userSlice";
 
- export const logIn = (email, password) => async (dispatch) => {
+export const logIn = (email, password) => async (dispatch) => {
     try {
         dispatch(loginRequest());
         const { data } = await axiosInstance.post("/v1/auth/log_in", { email, password });
@@ -38,7 +38,7 @@ import {
     }
 };
 
- export const signUp = (userData) => async (dispatch) => {
+export const signUp = (userData) => async (dispatch) => {
     try {
         dispatch(loginRequest());
         const { data } = await axiosInstance.post("/v1/auth/sign_up", userData);
@@ -53,7 +53,8 @@ import {
         throw error;
     }
 };
- export const logout = () => async (dispatch) => {
+
+export const logout = () => async (dispatch) => {
     try {
         const { data } = await axiosInstance.post("/v1/auth/log_out");
         localStorage.removeItem("token");
@@ -65,11 +66,36 @@ import {
 
 export const loadUser = () => async (dispatch) => {
     try {
-        dispatch(loginRequest());
+        
+        dispatch(loginRequest()); 
+        
         const { data } = await axiosInstance.get("/v1/users/profile");
-        dispatch(loadUserSuccess(data.data.user));
+        
+        
+        
+        let userData;
+        if (data.data && data.data.user) {
+            userData = data.data.user;
+        } else if (data.user) {
+            userData = data.user;
+        } else if (data.data) {
+            userData = data.data;
+        } else {
+            userData = data;
+        }
+        
+        
+        
+        if (userData && userData._id) {
+            dispatch(loadUserSuccess(userData));
+            
+        } else {
+            throw new Error("Invalid user data received");
+        }
     } catch (error) {
+        
         dispatch(loadUserFail(error.response?.data?.message || "Load user failed"));
+        localStorage.removeItem("token");
     }
 };
 

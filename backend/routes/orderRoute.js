@@ -1,22 +1,19 @@
-const express=require("express")
-const orderControllers=require("../controllers/orderController")
+const express = require("express");
+const orderControllers = require("../controllers/orderController");
+const { protect } = require("../middleware/Protect");
 
-const router=express.Router()
+const router = express.Router();
 
-router.get("/:id",orderControllers.getSingleOrder)
-router.get("/me/myoreders",orderControllers.myOrders)
-router.get("/allorders",orderControllers.getAllOrders)
-router.post("/new", orderControllers.createOrder);
-router.put("/:id/cancel", orderControllers.cancelOrder);
-router.put("/admin/:id/status", orderControllers.updateOrderStatus
-);
-router.delete(
-  "/admin/:id",
-  orderControllers.deleteOrder
-);
-router.get(
-  "/admin/statistics", 
-  orderControllers.getOrderStatistics
-);
-router.get("/recent", orderControllers.getRecentOrders);
-module.exports=router;
+
+router.get("/me/myorders", protect, orderControllers.myOrders);  
+router.get("/:id", protect, orderControllers.getSingleOrder);
+router.post("/new", protect, orderControllers.createOrder);
+router.put("/:id/cancel", protect, orderControllers.cancelOrder);
+
+router.get("/allorders", protect, orderControllers.getAllOrders);
+router.put("/admin/:id/status", protect, orderControllers.updateOrderStatus);
+router.delete("/admin/:id", protect, orderControllers.deleteOrder);
+router.get("/admin/statistics", protect, orderControllers.getOrderStatistics);
+router.get("/recent", protect, orderControllers.getRecentOrders);
+
+module.exports = router;
