@@ -12,6 +12,7 @@ import {
   ClipboardDocumentListIcon,
   BuildingStorefrontIcon,
   ChevronDownIcon,
+  ChartBarIcon,
 } from "@heroicons/react/24/outline";
 
 const Header = () => {
@@ -148,6 +149,11 @@ const Header = () => {
       .toUpperCase()
       .slice(0, 2);
   };
+
+  const showDashboard =
+    user && (user.role === "restaurant_owner" || user.role === "admin");
+  const isAdmin = user?.role === "admin";
+  const isRestaurantOwner = user?.role === "restaurant_owner";
 
   if (loading) {
     return (
@@ -309,7 +315,20 @@ const Header = () => {
                       <span>My Orders</span>
                     </Link>
 
-                    {user?.role === "restaurant_owner" && (
+                    {showDashboard && (
+                      <Link
+                        to={isAdmin ? "/admin/dashboard" : "/owner/dashboard"}
+                        onClick={closeDropdown}
+                        className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                      >
+                        <ChartBarIcon className="w-5 h-5" />
+                        <span>
+                          {isAdmin ? "Admin Dashboard" : "Restaurant Dashboard"}
+                        </span>
+                      </Link>
+                    )}
+
+                    {isRestaurantOwner && (
                       <Link
                         to="/owner/restaurants"
                         onClick={closeDropdown}
@@ -320,15 +339,18 @@ const Header = () => {
                       </Link>
                     )}
 
-                    {user?.role === "admin" && (
-                      <Link
-                        to="/admin/dashboard"
-                        onClick={closeDropdown}
-                        className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
-                      >
-                        <BuildingStorefrontIcon className="w-5 h-5" />
-                        <span>Admin Dashboard</span>
-                      </Link>
+                    {isAdmin && (
+                      <>
+                        <div className="border-t border-gray-100 my-1"></div>
+                        <Link
+                          to="/admin/restaurants"
+                          onClick={closeDropdown}
+                          className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                        >
+                          <BuildingStorefrontIcon className="w-5 h-5" />
+                          <span>Manage Restaurants</span>
+                        </Link>
+                      </>
                     )}
 
                     <div className="border-t border-gray-100 my-1"></div>
@@ -479,7 +501,20 @@ const Header = () => {
                     <span>My Orders</span>
                   </Link>
 
-                  {user?.role === "restaurant_owner" && (
+                  {showDashboard && (
+                    <Link
+                      to={isAdmin ? "/admin/dashboard" : "/owner/dashboard"}
+                      onClick={closeMobileMenu}
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50"
+                    >
+                      <ChartBarIcon className="w-5 h-5" />
+                      <span>
+                        {isAdmin ? "Admin Dashboard" : "Restaurant Dashboard"}
+                      </span>
+                    </Link>
+                  )}
+
+                  {isRestaurantOwner && (
                     <Link
                       to="/owner/restaurants"
                       onClick={closeMobileMenu}
@@ -487,17 +522,6 @@ const Header = () => {
                     >
                       <BuildingStorefrontIcon className="w-5 h-5" />
                       <span>My Restaurants</span>
-                    </Link>
-                  )}
-
-                  {user?.role === "admin" && (
-                    <Link
-                      to="/admin/dashboard"
-                      onClick={closeMobileMenu}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50"
-                    >
-                      <BuildingStorefrontIcon className="w-5 h-5" />
-                      <span>Admin Dashboard</span>
                     </Link>
                   )}
 
