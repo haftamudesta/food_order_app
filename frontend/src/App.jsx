@@ -22,6 +22,13 @@ import OrderSuccess from "./pages/cart/OrderSuccess";
 import PaymentError from "./pages/paymant/PaymentError";
 import CheckoutPage from "./pages/checkout/CheckoutPage";
 import LoadingSpinner from "./components/ui/LoadingSpinner";
+import RestaurantDashboard from "./pages/owner/RestaurantDashboard";
+import CreateRestaurant from "./pages/owner/CreateRestaurant";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminRestaurants from "./pages/admin/AdminRestaurants"; // Add this
+import AdminOrders from "./pages/admin/AdminOrders"; // Add this
+import AdminUsers from "./pages/admin/AdminUsers"; // Add this
+import ProtectedRoute from "./shared/components/ProtectedRoute";
 
 function App() {
   const dispatch = useDispatch();
@@ -104,20 +111,79 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/restaurant/search/:keyword" element={<Home />} />
             <Route path="/restaurants" element={<Home />} />
-            <Route path="/cart" element={<CartPage />} />
             <Route path="/restaurant/:id" element={<RestaurantMenuPage />} />
             <Route path="/sign-up" element={<SignUp />} />
             <Route path="/sign-in" element={<SignIn />} />
             <Route path="/forgot-password" element={<ResetPassword />} />
+            <Route path="/terms" element={<TermsService />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/orders" element={<MyOrders />} />
             <Route path="/orders/:id" element={<OrderDetails />} />
             <Route path="/order-success/:orderId?" element={<OrderSuccess />} />
             <Route path="/payment/error/:orderId?" element={<PaymentError />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/terms" element={<TermsService />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/unauthorized" element={<Unauthorized />} />
+
+            <Route
+              path="/owner/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["restaurant_owner", "admin"]}>
+                  <RestaurantDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/owner/restaurants/create"
+              element={
+                <ProtectedRoute allowedRoles={["restaurant_owner", "admin"]}>
+                  <CreateRestaurant />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/owner/restaurants/:id/edit"
+              element={
+                <ProtectedRoute allowedRoles={["restaurant_owner", "admin"]}>
+                  <CreateRestaurant />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/restaurants"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminRestaurants />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/orders"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminOrders />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminUsers />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </div>
         <Footer />
