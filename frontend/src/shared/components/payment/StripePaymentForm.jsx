@@ -6,7 +6,6 @@ import {
   confirmPayment,
   createPaymentIntent,
 } from "@/redux/actions/paymentAction";
-import { clearCart } from "@/redux/actions/cartAction";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 const StripePaymentForm = ({ orderId, amount, onSuccess, onError }) => {
@@ -21,6 +20,8 @@ const StripePaymentForm = ({ orderId, amount, onSuccess, onError }) => {
 
   const [processing, setProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
+  const [cardComplete, setCardComplete] = useState(false);
+  const [cardError, setCardError] = useState(null);
 
   const cardElementOptions = {
     style: {
@@ -40,28 +41,35 @@ const StripePaymentForm = ({ orderId, amount, onSuccess, onError }) => {
     hidePostalCode: true,
   };
 
-  useEffect(() => {
-    if (!orderId) {
-      navigate("/checkout");
+  const handleCardChange = (event) => {
+    setCardComplete(event.complete);
+    if (event.error) {
+      setCardError(event.error.message);
+    } else {
+      setCardError(null);
     }
-  }, [orderId, navigate]);
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!stripe || !elements) {
-      setPaymentError("Stripe is not initialized. Please try again.");
-      navigate(
-        `/payment/error/${orderId}?error_code=processing_error&message=Stripe not initialized`,
-      );
+      const errorMsg = "Stripe is not initialized. Please refresh the page.";
+      setPaymentError(errorMsg);
+      onError?.(errorMsg);
+      return;
+    }
+
+    if (!cardComplete) {
+      const errorMsg = "Please enter complete card details.";
+      setPaymentError(errorMsg);
       return;
     }
 
     if (!orderId) {
-      setPaymentError("Order information is missing.");
-      navigate(
-        `/payment/error?error_code=processing_error&message=Order not found`,
-      );
+      const errorMsg = "Order information is missing.";
+      setPaymentError(errorMsg);
+      onError?.(errorMsg);
       return;
     }
 
@@ -70,6 +78,7 @@ const StripePaymentForm = ({ orderId, amount, onSuccess, onError }) => {
 
     try {
       let secret = clientSecret;
+
       if (!secret) {
         const result = await dispatch(
           createPaymentIntent({ orderId, paymentMethod: "credit_card" }),
@@ -81,49 +90,48 @@ const StripePaymentForm = ({ orderId, amount, onSuccess, onError }) => {
         }
       }
 
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) {
+        throw new Error("Card element not found.");
+      }
+
       const { error: confirmError, paymentIntent } =
         await stripe.confirmCardPayment(secret, {
           payment_method: {
-            card: elements.getElement(CardElement),
+            card: cardElement,
             billing_details: {
               name: user?.name || "Customer",
               email: user?.email || "",
-              address: {
-                line1: user?.address || "",
-              },
             },
           },
         });
 
       if (confirmError) {
+        // Navigate to error page - NO AUTO REDIRECT
         const errorCode = confirmError.code || "card_declined";
         navigate(
           `/payment/error/${orderId}?error_code=${errorCode}&message=${encodeURIComponent(confirmError.message)}`,
+          { replace: true },
         );
         onError?.(confirmError.message);
         return;
       }
 
-      if (paymentIntent.status === "succeeded") {
+      if (paymentIntent?.status === "succeeded") {
         await dispatch(
           confirmPayment({ paymentIntentId: paymentIntent.id }),
         ).unwrap();
-
-        dispatch(clearCart());
-
-        navigate(`/order-success/${orderId}`);
+        navigate(`/order-success/${orderId}`, { replace: true });
         onSuccess?.(paymentIntent);
       } else {
-        navigate(
-          `/payment/error/${orderId}?error_code=processing_error&message=Payment ${paymentIntent.status}`,
-        );
-        onError?.(`Payment ${paymentIntent.status}`);
+        throw new Error(`Payment ${paymentIntent?.status}. Please try again.`);
       }
     } catch (err) {
       console.error("Payment error:", err);
       const errorMessage = err.message || "Payment processing failed";
       navigate(
         `/payment/error/${orderId}?error_code=processing_error&message=${encodeURIComponent(errorMessage)}`,
+        { replace: true },
       );
       onError?.(errorMessage);
     } finally {
@@ -134,7 +142,8 @@ const StripePaymentForm = ({ orderId, amount, onSuccess, onError }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="p-4 border border-gray-200 rounded-lg bg-white">
-        <CardElement options={cardElementOptions} />
+        <CardElement options={cardElementOptions} onChange={handleCardChange} />
+        {cardError && <p className="text-red-500 text-xs mt-2">{cardError}</p>}
       </div>
 
       {(paymentError || error) && (
@@ -145,7 +154,9 @@ const StripePaymentForm = ({ orderId, amount, onSuccess, onError }) => {
 
       <button
         type="submit"
-        disabled={!stripe || !elements || processing || loading}
+        disabled={
+          !stripe || !elements || !cardComplete || processing || loading
+        }
         className="w-full bg-orange-600 text-white py-3 rounded-lg font-semibold hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {processing || loading ? (
@@ -157,6 +168,11 @@ const StripePaymentForm = ({ orderId, amount, onSuccess, onError }) => {
           `Pay $${amount?.toFixed(2)}`
         )}
       </button>
+
+      <div className="text-xs text-gray-400 text-center mt-4 p-2 bg-gray-50 rounded">
+        <p>Test Card: 4242 4242 4242 4242</p>
+        <p>Expiry: 12/34 | CVC: 123</p>
+      </div>
     </form>
   );
 };
