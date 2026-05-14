@@ -119,8 +119,6 @@ const Header = () => {
       .slice(0, 2);
   };
 
-  console.log("Cart item count:", itemCount); // Debug log
-
   return (
     <>
       <nav

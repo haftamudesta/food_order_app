@@ -5,9 +5,9 @@ import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import {
   confirmPayment,
   createPaymentIntent,
-} from "../../redux/actions/paymentAction";
-import { clearCart } from "../../redux/actions/cartAction";
-import LoadingSpinner from "../ui/LoadingSpinner";
+} from "@/redux/actions/paymentAction";
+import { clearCart } from "@/redux/actions/cartAction";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 const StripePaymentForm = ({ orderId, amount, onSuccess, onError }) => {
   const navigate = useNavigate();
