@@ -3,9 +3,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import StripePaymentForm from "../../components/payment/StripePaymentForm";
+import StripePaymentForm from "@/shared/components/payment/StripePaymentForm";
 import { createOrder } from "../../redux/actions/orderAction";
-import { clearCart } from "../../redux/actions/cartAction";
+import { clearCart } from "@/redux/actions/cartAction";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
