@@ -22,6 +22,9 @@ import OrderSuccess from "./pages/cart/OrderSuccess";
 import PaymentError from "./pages/paymant/PaymentError";
 import CheckoutPage from "./pages/checkout/CheckoutPage";
 import LoadingSpinner from "./components/ui/LoadingSpinner";
+import RestaurantDashboard from "./pages/owner/RestaurantDashboard";
+import CreateRestaurant from "./pages/owner/CreateRestaurant";
+import ProtectedRoute from "./shared/components/ProtectedRoute"; // Add this import
 
 function App() {
   const dispatch = useDispatch();
@@ -101,23 +104,52 @@ function App() {
         <Header />
         <div className="pt-16">
           <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/restaurant/search/:keyword" element={<Home />} />
             <Route path="/restaurants" element={<Home />} />
-            <Route path="/cart" element={<CartPage />} />
             <Route path="/restaurant/:id" element={<RestaurantMenuPage />} />
             <Route path="/sign-up" element={<SignUp />} />
             <Route path="/sign-in" element={<SignIn />} />
             <Route path="/forgot-password" element={<ResetPassword />} />
+            <Route path="/terms" element={<TermsService />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+
+            {/* Protected Routes - Require Authentication */}
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/orders" element={<MyOrders />} />
             <Route path="/orders/:id" element={<OrderDetails />} />
             <Route path="/order-success/:orderId?" element={<OrderSuccess />} />
             <Route path="/payment/error/:orderId?" element={<PaymentError />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/terms" element={<TermsService />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/unauthorized" element={<Unauthorized />} />
+
+            {/* Restaurant Owner Routes - Require Authentication + Role */}
+            <Route
+              path="/owner/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["restaurant_owner", "admin"]}>
+                  <RestaurantDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/owner/restaurants/create"
+              element={
+                <ProtectedRoute allowedRoles={["restaurant_owner", "admin"]}>
+                  <CreateRestaurant />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/owner/restaurants/:id/edit"
+              element={
+                <ProtectedRoute allowedRoles={["restaurant_owner", "admin"]}>
+                  <CreateRestaurant />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </div>
         <Footer />
