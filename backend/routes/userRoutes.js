@@ -26,14 +26,11 @@ router.delete("/account", deleteAccount);
 router.post('/upload-profile-pic', upload.single('profile_pic'), userControllers.uploadProfilePicture);
 router.delete('/remove-profile-pic', userControllers.removeProfilePicture);
 
-//ADMIN ONLY ROUTES
-router.use(authorizeRoles("admin")); // All routes below require admin role
+router.use(authorizeRoles("admin")); 
 
-// Specific routes first
 router.get("/get_all_users", getAllUsers);
 router.get("/stats", getUserStats);
 
-// Parameter routes (with :id) - after specific routes
 router.get("/get_user/:id", getUserById);
 router.put("/update-role/:id", updateUserRole);
 router.put("/update-status/:id", updateUserStatus);
