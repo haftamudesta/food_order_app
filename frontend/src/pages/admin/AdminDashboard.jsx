@@ -37,55 +37,43 @@ const ClockIcon = ({ className }) => (
 
 const AdminDashboard = () => {
   const dispatch = useDispatch();
-  const isMounted = useRef(true);
-  const fetchCalled = useRef(false);
-
-  // Safe selectors with fallbacks
-  const orderState = useSelector((state) => state.order) || {};
-  const restaurantState = useSelector((state) => state.restaurants) || {};
-  const userState = useSelector((state) => state.user) || {};
+  const hasFetchedOrders = useRef(false);
+  const hasFetchedUsers = useRef(false);
 
   const {
-    allOrders = [],
-    statistics = {},
-    loading: ordersLoading = false,
-    totalOrders = 0,
-    totalAmount = 0,
-  } = orderState;
+    allOrders,
+    statistics,
+    loading: ordersLoading,
+    totalOrders,
+    totalAmount,
+  } = useSelector((state) => state.order);
+  const { myRestaurants, loading: restaurantsLoading } = useSelector(
+    (state) => state.restaurants,
+  );
+  const { user, users, totalUsers, usersLoading } = useSelector(
+    (state) => state.user,
+  );
 
-  const { myRestaurants = [], loading: restaurantsLoading = false } =
-    restaurantState;
+  const isLoading = ordersLoading || restaurantsLoading;
 
-  const {
-    user = null,
-    users = [],
-    totalUsers = 0,
-    loading: usersLoading = false,
-    error: usersError = null,
-  } = userState;
-
-  const isLoading = ordersLoading || restaurantsLoading || usersLoading;
-
-  // Use a ref with a flag to ensure this runs only once even with Strict Mode
   useEffect(() => {
-    if (fetchCalled.current === false) {
-      fetchCalled.current = true;
-      console.log("Fetching dashboard data - FIRST AND LAST TIME");
-
-      // Execute all dispatches
+    if (!hasFetchedOrders.current) {
+      hasFetchedOrders.current = true;
+      console.log("Fetching orders and restaurants - once");
       dispatch(getAllOrders());
       dispatch(getOrderStatistics());
       dispatch(getMyRestaurants());
+    }
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (!hasFetchedUsers.current && user?.role === "admin") {
+      hasFetchedUsers.current = true;
       dispatch(getAllUsers());
     }
+  }, [dispatch, user?.role]);
 
-    return () => {
-      isMounted.current = false;
-    };
-  }, [dispatch]); // Keep dispatch but the flag prevents re-execution
-
-  // Show loading spinner
-  if (isLoading && fetchCalled.current) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="large" />
@@ -93,57 +81,28 @@ const AdminDashboard = () => {
     );
   }
 
-  // Show error if there's a users error
-  if (usersError) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md text-center">
-          <XCircleIcon className="w-12 h-12 text-red-600 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-red-800 mb-2">
-            Error Loading Users
-          </h2>
-          <p className="text-red-600">{usersError}</p>
-          <button
-            onClick={() => dispatch(getAllUsers())}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Safe calculations with optional chaining
   const pendingOrders =
-    allOrders?.filter((order) => order?.orderStatus === "pending").length || 0;
+    allOrders?.filter((order) => order.orderStatus === "pending").length || 0;
   const processingOrders =
-    allOrders?.filter((order) => order?.orderStatus === "processing").length ||
+    allOrders?.filter((order) => order.orderStatus === "processing").length ||
     0;
   const deliveredOrders =
-    allOrders?.filter((order) => order?.orderStatus === "delivered").length ||
-    0;
+    allOrders?.filter((order) => order.orderStatus === "delivered").length || 0;
   const cancelledOrders =
-    allOrders?.filter((order) => order?.orderStatus === "cancelled").length ||
-    0;
-
+    allOrders?.filter((order) => order.orderStatus === "cancelled").length || 0;
   const recentOrders = allOrders?.slice(0, 5) || [];
 
-  // Safely calculate user statistics
   const activeUsers = users?.filter((u) => u?.isActive).length || 0;
   const adminUsers = users?.filter((u) => u?.role === "admin").length || 0;
   const restaurantOwners =
     users?.filter((u) => u?.role === "restaurant_owner").length || 0;
-  const regularUsers = users?.filter((u) => u?.role === "user").length || 0;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-500 mt-1">
-            Welcome back, {user?.name || "Admin"}
-          </p>
+          <p className="text-gray-500 mt-1">Welcome back, {user?.name}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -185,8 +144,7 @@ const AdminDashboard = () => {
                   {myRestaurants?.length || 0}
                 </p>
                 <p className="text-sm text-blue-600 mt-1">
-                  Active:{" "}
-                  {myRestaurants?.filter((r) => r?.isActive).length || 0}
+                  Active: {myRestaurants?.filter((r) => r.isActive).length || 0}
                 </p>
               </div>
               <BuildingStorefrontIcon className="w-12 h-12 text-blue-600 opacity-50" />
@@ -198,10 +156,14 @@ const AdminDashboard = () => {
               <div>
                 <p className="text-sm text-gray-500">Total Users</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {totalUsers || 0}
+                  {usersLoading ? (
+                    <span className="inline-block w-8 h-8 border-2 border-gray-300 border-t-orange-600 rounded-full animate-spin"></span>
+                  ) : (
+                    totalUsers || 0
+                  )}
                 </p>
                 <p className="text-sm text-green-600 mt-1">
-                  Active: {activeUsers}
+                  Active: {usersLoading ? "..." : activeUsers}
                 </p>
               </div>
               <UserGroupIcon className="w-12 h-12 text-purple-600 opacity-50" />
@@ -253,26 +215,30 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
             <p className="text-sm text-gray-600">Total Users</p>
             <p className="text-2xl font-bold text-indigo-600">
-              {totalUsers || 0}
+              {usersLoading ? "..." : totalUsers || 0}
             </p>
           </div>
           <div className="bg-green-50 rounded-lg p-4 border border-green-200">
             <p className="text-sm text-gray-600">Active Users</p>
-            <p className="text-2xl font-bold text-green-600">{activeUsers}</p>
+            <p className="text-2xl font-bold text-green-600">
+              {usersLoading ? "..." : activeUsers}
+            </p>
           </div>
           <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
             <p className="text-sm text-gray-600">Restaurant Owners</p>
             <p className="text-2xl font-bold text-blue-600">
-              {restaurantOwners}
+              {usersLoading ? "..." : restaurantOwners}
             </p>
           </div>
           <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
             <p className="text-sm text-gray-600">Admin Users</p>
-            <p className="text-2xl font-bold text-purple-600">{adminUsers}</p>
+            <p className="text-2xl font-bold text-purple-600">
+              {usersLoading ? "..." : adminUsers}
+            </p>
           </div>
         </div>
 
@@ -288,7 +254,6 @@ const AdminDashboard = () => {
               View All Orders →
             </Link>
           </div>
-
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -333,15 +298,7 @@ const AdminDashboard = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
-                        className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          order.orderStatus === "delivered"
-                            ? "bg-green-100 text-green-800"
-                            : order.orderStatus === "cancelled"
-                              ? "bg-red-100 text-red-800"
-                              : order.orderStatus === "processing"
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-yellow-100 text-yellow-800"
-                        }`}
+                        className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${order.orderStatus === "delivered" ? "bg-green-100 text-green-800" : order.orderStatus === "cancelled" ? "bg-red-100 text-red-800" : order.orderStatus === "processing" ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800"}`}
                       >
                         {order.orderStatus}
                       </span>

@@ -4,7 +4,8 @@ const initialState = {
     user: null,
     users: [], 
     totalUsers: 0,
-    loading: false,
+    loading: false,           
+    usersLoading: false,      
     isAuthenticated: false,
     error: null,
     isUpdated: false,
@@ -81,24 +82,24 @@ const userSlice = createSlice({
         updateReset: (state) => {
             state.isUpdated = false;
         },
+        // Admin: Get All Users - using separate loading state
         getAllUsersRequest: (state) => {
-            state.loading = true;
+            state.usersLoading = true;  // Use separate loading state
             state.error = null;
         },
         getAllUsersSuccess: (state, action) => {
-            state.loading = false;
+            state.usersLoading = false;
             state.users = action.payload.users || [];
             state.totalUsers = action.payload.count || 0;
             state.error = null;
         },
         getAllUsersFail: (state, action) => {
-            state.loading = false;
+            state.usersLoading = false;
             state.users = [];
             state.totalUsers = 0;
             state.error = action.payload;
         },
         updateUserStatusSuccess: (state, action) => {
-            state.loading = false;
             state.success = true;
             const index = state.users.findIndex(u => u._id === action.payload.userId);
             if (index !== -1) {
@@ -106,7 +107,6 @@ const userSlice = createSlice({
             }
         },
         updateUserRoleSuccess: (state, action) => {
-            state.loading = false;
             state.success = true;
             const index = state.users.findIndex(u => u._id === action.payload.userId);
             if (index !== -1) {
@@ -114,7 +114,6 @@ const userSlice = createSlice({
             }
         },
         deleteUserSuccess: (state, action) => {
-            state.loading = false;
             state.users = state.users.filter(u => u._id !== action.payload);
             state.totalUsers = state.users.length;
             state.success = true;

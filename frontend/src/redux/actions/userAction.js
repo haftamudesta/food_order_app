@@ -22,6 +22,8 @@ import {
 } from "../slices/userSlice";
 import toast from "react-hot-toast";
 
+let isFetchingUsers = false;
+
 export const logIn = (email, password) => async (dispatch) => {
     try {
         dispatch(loginRequest());
@@ -140,20 +142,30 @@ export const updateProfile = (userData) => async (dispatch) => {
     }
 };
 
-
 export const getAllUsers = () => async (dispatch) => {
+    if (isFetchingUsers) {
+        return;
+    }
+    
     try {
-        dispatch(getAllUsersRequest());
+        isFetchingUsers = true;
+        console.log("getAllUsers called - fetching users");
+        dispatch(getAllUsersRequest()); 
+        
         const { data } = await axiosInstance.get("/v1/users/get_all_users");
+        
+        console.log("getAllUsers success - users:", data.data?.length);
         
         dispatch(getAllUsersSuccess({
             users: data.data || [],
             count: data.count || 0
         }));
     } catch (error) {
+        console.error("getAllUsers error:", error.response?.data?.message || error.message);
         const errorMessage = error.response?.data?.message || "Failed to fetch users";
         dispatch(getAllUsersFail(errorMessage));
-        toast.error(errorMessage);
+    } finally {
+        isFetchingUsers = false;
     }
 };
 
@@ -167,7 +179,6 @@ export const updateUserStatus = ({ id, isActive }) => async (dispatch) => {
         toast.error(errorMessage);
     }
 };
-
 
 export const updateUserRole = ({ id, role }) => async (dispatch) => {
     try {

@@ -131,8 +131,8 @@ exports.getUserById = catchAsyncErrors(async (req, res, next) => {
 exports.updateUserRole = catchAsyncErrors(async (req, res, next) => {
     const { role } = req.body;
 
-    if (!role || !["user", "admin"].includes(role)) {
-        return next(new AppError("Please provide a valid role (user or admin)", 400));
+    if (!role || !["user", "admin", "restaurant_owner"].includes(role)) {
+        return next(new AppError("Please provide a valid role (user, admin, or restaurant_owner)", 400));
     }
 
     const user = await User.findByIdAndUpdate(
