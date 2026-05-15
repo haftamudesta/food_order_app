@@ -1,6 +1,7 @@
 const User = require("../models/user");
 const catchAsyncErrors=require("../middleware/catchAsyncErrors")
 const AppError = require("../utils/errorHandler");
+const { cloudinary } = require('../config/cloudinary');
 
 exports.getProfile = catchAsyncErrors(async (req, res, next) => {
     const user = await User.findById(req.user.id);
@@ -210,5 +211,63 @@ exports.getUserStats = catchAsyncErrors(async (req, res, next) => {
             adminUsers,
             regularUsers
         }
+    });
+});
+
+
+exports.uploadProfilePicture = catchAsyncErrors(async (req, res, next) => {
+    if (!req.file) {
+        return next(new AppError("Please upload an image", 400));
+    }
+
+    const user = await User.findById(req.user.id);
+    
+    if (!user) {
+        return next(new AppError("User not found", 404));
+    }
+
+    if (user.profile_pic && user.profile_pic.public_id) {
+        await cloudinary.uploader.destroy(user.profile_pic.public_id);
+    }
+
+    // Update user with new profile picture
+    user.profile_pic = {
+        public_id: req.file.filename,
+        url: req.file.path
+    };
+    
+    await user.save();
+
+    res.status(200).json({
+        success: true,
+        message: "Profile picture updated successfully",
+        data: {
+            profile_pic: user.profile_pic
+        }
+    });
+});
+
+exports.removeProfilePicture = catchAsyncErrors(async (req, res, next) => {
+    const user = await User.findById(req.user.id);
+    
+    if (!user) {
+        return next(new AppError("User not found", 404));
+    }
+
+    // Delete profile picture from Cloudinary
+    if (user.profile_pic && user.profile_pic.public_id) {
+        await cloudinary.uploader.destroy(user.profile_pic.public_id);
+    }
+
+    user.profile_pic = {
+        public_id: null,
+        url: null
+    };
+    
+    await user.save();
+
+    res.status(200).json({
+        success: true,
+        message: "Profile picture removed successfully"
     });
 });
