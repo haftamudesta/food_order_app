@@ -87,12 +87,14 @@ const userSlice = createSlice({
         },
         getAllUsersSuccess: (state, action) => {
             state.loading = false;
-            state.users = action.payload.users;
-            state.totalUsers = action.payload.count;
+            state.users = action.payload.users || [];
+            state.totalUsers = action.payload.count || 0;
             state.error = null;
         },
         getAllUsersFail: (state, action) => {
             state.loading = false;
+            state.users = [];
+            state.totalUsers = 0;
             state.error = action.payload;
         },
         updateUserStatusSuccess: (state, action) => {
