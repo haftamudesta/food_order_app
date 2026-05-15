@@ -24,6 +24,7 @@ const AdminDashboard = () => {
     useSelector((state) => state.order);
   const { myRestaurants } = useSelector((state) => state.restaurants);
   const { user } = useSelector((state) => state.user);
+  console.log("user", user);
 
   useEffect(() => {
     dispatch(getAllOrders());
