@@ -1,6 +1,6 @@
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { Readable } = require('stream');
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -8,29 +8,51 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'food_delivery',
-        allowed_formats: ['jpg', 'png', 'jpeg', 'gif', 'webp'],
-        transformation: [{ width: 500, height: 500, crop: 'limit' }]
-    }
-});
+const storage = multer.memoryStorage();
 
-const upload = multer({ 
+const fileFilter = (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(file.originalname.toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+        cb(null, true);
+    } else {
+        cb(new Error('Only image files are allowed!'), false);
+    }
+};
+
+const uploadSingle = multer({
     storage: storage,
     limits: { fileSize: 5 * 1024 * 1024 }, 
-    fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png|gif|webp/;
-        const extname = allowedTypes.test(file.originalname.toLowerCase());
-        const mimetype = allowedTypes.test(file.mimetype);
-        
-        if (mimetype && extname) {
-            return cb(null, true);
-        } else {
-            cb(new Error('Only image files are allowed!'));
-        }
-    }
+    fileFilter: fileFilter
 });
 
-module.exports = { cloudinary, upload };
+const uploadMultiple = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, 
+    fileFilter: fileFilter
+});
+
+const uploadToCloudinary = (buffer, folder, options = {}) => {
+    return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+            {
+                folder: folder,
+                transformation: [{ width: 500, height: 500, crop: 'limit' }],
+                ...options
+            },
+            (error, result) => {
+                if (error) reject(error);
+                else resolve(result);
+            }
+        );
+        
+        const readableStream = new Readable();
+        readableStream.push(buffer);
+        readableStream.push(null);
+        readableStream.pipe(uploadStream);
+    });
+};
+
+module.exports = { cloudinary, uploadSingle, uploadMultiple, uploadToCloudinary };

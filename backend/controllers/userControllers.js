@@ -1,7 +1,7 @@
 const User = require("../models/user");
 const catchAsyncErrors=require("../middleware/catchAsyncErrors")
 const AppError = require("../utils/errorHandler");
-const { cloudinary } = require('../config/cloudinary');
+const { uploadToCloudinary } = require('../config/cloudinary');
 
 exports.getProfile = catchAsyncErrors(async (req, res, next) => {
     const user = await User.findById(req.user.id);
@@ -230,10 +230,11 @@ exports.uploadProfilePicture = catchAsyncErrors(async (req, res, next) => {
         await cloudinary.uploader.destroy(user.profile_pic.public_id);
     }
 
-    // Update user with new profile picture
+    const result = await uploadToCloudinary(req.file.buffer, 'food_delivery/profiles');
+
     user.profile_pic = {
-        public_id: req.file.filename,
-        url: req.file.path
+        public_id: result.public_id,
+        url: result.secure_url
     };
     
     await user.save();
@@ -242,7 +243,12 @@ exports.uploadProfilePicture = catchAsyncErrors(async (req, res, next) => {
         success: true,
         message: "Profile picture updated successfully",
         data: {
-            profile_pic: user.profile_pic
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                profile_pic: user.profile_pic
+            }
         }
     });
 });
@@ -254,20 +260,23 @@ exports.removeProfilePicture = catchAsyncErrors(async (req, res, next) => {
         return next(new AppError("User not found", 404));
     }
 
-    // Delete profile picture from Cloudinary
     if (user.profile_pic && user.profile_pic.public_id) {
         await cloudinary.uploader.destroy(user.profile_pic.public_id);
     }
 
-    user.profile_pic = {
-        public_id: null,
-        url: null
-    };
-    
+    user.profile_pic = null;
     await user.save();
 
     res.status(200).json({
         success: true,
-        message: "Profile picture removed successfully"
+        message: "Profile picture removed successfully",
+        data: {
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                profile_pic: null
+            }
+        }
     });
 });
