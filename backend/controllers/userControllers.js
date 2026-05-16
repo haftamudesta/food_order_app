@@ -23,9 +23,6 @@ exports.getProfile = catchAsyncErrors(async (req, res, next) => {
 exports.updateProfile = catchAsyncErrors(async (req, res, next) => {
     const { name, email, phone } = req.body;
     
-    console.log("Update profile request:", { name, email, phone });
-    console.log("User ID:", req.user.id);
-    
     if (email || phone) {
         const existingUser = await User.findOne({
             _id: { $ne: req.user.id },
@@ -50,8 +47,6 @@ exports.updateProfile = catchAsyncErrors(async (req, res, next) => {
     if (!user) {
         return next(new AppError("User not found", 404));
     }
-
-    console.log("Profile updated successfully:", user._id);
 
     res.status(200).json({
         success: true,
