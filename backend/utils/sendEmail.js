@@ -1,11 +1,10 @@
-// utils/sendEmail.js
 const nodemailer = require("nodemailer");
 
 const sendEmail = async (options) => {
-    // Check if credentials exist
+    const currentYear = new Date().getFullYear();
+
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
         console.error("Email credentials missing. Please set EMAIL_USER and EMAIL_PASSWORD in .env");
-        // For development, just log the reset link
         console.log("========================================");
         console.log("PASSWORD RESET LINK (Email not sent - missing credentials):");
         console.log(options.resetUrl);
@@ -13,21 +12,31 @@ const sendEmail = async (options) => {
         return false;
     }
 
-    // Create transporter
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASSWORD
-        }
+        },
+        pool: true, 
+        maxConnections: 1, 
+        rateLimit: true, 
+        maxMessages: 5 
     });
 
-    // Email HTML template
+    try {
+        await transporter.verify();
+        console.log("Email transporter verified successfully");
+    } catch (verifyError) {
+        console.error("Email transporter verification failed:", verifyError.message);
+    }
+
     const htmlTemplate = `
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Password Reset</title>
             <style>
                 body {
@@ -54,6 +63,10 @@ const sendEmail = async (options) => {
                     margin: 0;
                     font-size: 28px;
                 }
+                .header p {
+                    color: #ffd89b;
+                    margin-top: 10px;
+                }
                 .content {
                     padding: 40px;
                 }
@@ -67,6 +80,13 @@ const sendEmail = async (options) => {
                     margin: 20px 0;
                     font-weight: bold;
                 }
+                .info {
+                    background-color: #fff3e0;
+                    padding: 15px;
+                    border-radius: 8px;
+                    margin: 20px 0;
+                    border-left: 4px solid #f97316;
+                }
                 .footer {
                     background-color: #f8f9fa;
                     padding: 20px;
@@ -74,26 +94,31 @@ const sendEmail = async (options) => {
                     font-size: 12px;
                     color: #6c757d;
                 }
+                .footer p {
+                    margin: 5px 0;
+                }
             </style>
         </head>
         <body>
             <div class="container">
                 <div class="header">
                     <h1>Food Delivery</h1>
-                    <p style="color: #ffd89b; margin-top: 10px;">Reset Your Password</p>
+                    <p>Reset Your Password</p>
                 </div>
                 <div class="content">
                     <h2 style="color: #333; margin-bottom: 20px;">Hello, ${options.name || 'User'}!</h2>
-                    <p style="color: #555; line-height: 1.6;">We received a request to reset your password.</p>
+                    <p style="color: #555; line-height: 1.6;">We received a request to reset your password for your Food Delivery account.</p>
+                    <div class="info">
+                        <p style="margin: 0; color: #f97316;"><strong>⏰ Link Expires: 10 minutes</strong></p>
+                    </div>
                     <div style="text-align: center;">
                         <a href="${options.resetUrl}" class="button">Reset Password Now</a>
                     </div>
-                    <p style="color: #555; margin-top: 20px;">If the button doesn't work, copy and paste this link:</p>
+                    <p style="color: #555; margin-top: 20px;">If the button doesn't work, copy and paste this link into your browser:</p>
                     <p style="background-color: #f4f4f4; padding: 12px; border-radius: 6px; word-break: break-all; font-size: 12px;">
                         <a href="${options.resetUrl}" style="color: #f97316;">${options.resetUrl}</a>
                     </p>
-                    <p style="color: #555; margin-top: 20px;">This link expires in 10 minutes.</p>
-                    <p style="color: #999; margin-top: 30px;">If you didn't request this, please ignore this email.</p>
+                    <p style="color: #555; margin-top: 20px;">If you didn't request this, please ignore this email.</p>
                 </div>
                 <div class="footer">
                     <p>&copy; ${currentYear} Food Delivery App. All rights reserved.</p>
@@ -111,12 +136,33 @@ const sendEmail = async (options) => {
         html: htmlTemplate
     };
 
-    try {
-        await transporter.sendMail(mailOptions);
-        return true;
-    } catch (error) {
-        throw new Error("Failed to send email");
+    let lastError;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+            console.log(`Attempt ${attempt} to send email to ${options.email}...`);
+            const info = await transporter.sendMail(mailOptions);
+            console.log(`✅ Email sent successfully to ${options.email} on attempt ${attempt}`);
+            console.log("Message ID:", info.messageId);
+            return true;
+        } catch (error) {
+            lastError = error;
+            console.error(`Attempt ${attempt} failed:`, error.message);
+            if (attempt < 3) {
+                await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+            }
+        }
     }
+
+    console.error("All email attempts failed. Last error:", lastError.message);
+    console.log("========================================");
+    console.log("PASSWORD RESET LINK (Email failed - use this link):");
+    console.log(options.resetUrl);
+    console.log("========================================");
+    
+    if (process.env.NODE_ENV === 'development') {
+        return false;
+    }
+    throw new Error("Failed to send email after multiple attempts");
 };
 
 module.exports = sendEmail;
