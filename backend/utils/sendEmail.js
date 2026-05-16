@@ -2,16 +2,10 @@ const nodemailer = require("nodemailer");
 
 const sendEmail = async (options) => {
     const currentYear = new Date().getFullYear();
-
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-        console.error("Email credentials missing. Please set EMAIL_USER and EMAIL_PASSWORD in .env");
-        console.log("========================================");
-        console.log("PASSWORD RESET LINK (Email not sent - missing credentials):");
-        console.log(options.resetUrl);
-        console.log("========================================");
+
         return false;
     }
-
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -139,30 +133,18 @@ const sendEmail = async (options) => {
     let lastError;
     for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-            console.log(`Attempt ${attempt} to send email to ${options.email}...`);
-            const info = await transporter.sendMail(mailOptions);
-            console.log(`✅ Email sent successfully to ${options.email} on attempt ${attempt}`);
-            console.log("Message ID:", info.messageId);
             return true;
         } catch (error) {
             lastError = error;
-            console.error(`Attempt ${attempt} failed:`, error.message);
             if (attempt < 3) {
                 await new Promise(resolve => setTimeout(resolve, attempt * 2000));
             }
         }
     }
-
     console.error("All email attempts failed. Last error:", lastError.message);
-    console.log("========================================");
-    console.log("PASSWORD RESET LINK (Email failed - use this link):");
-    console.log(options.resetUrl);
-    console.log("========================================");
-    
     if (process.env.NODE_ENV === 'development') {
         return false;
     }
     throw new Error("Failed to send email after multiple attempts");
 };
-
 module.exports = sendEmail;

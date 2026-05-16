@@ -295,31 +295,24 @@ exports.removeProfilePicture = catchAsyncErrors(async (req, res, next) => {
     });
 });
 
-
 exports.forgotPassword = catchAsyncErrors(async (req, res, next) => {
     const { email } = req.body;
-
     if (!email) {
         return next(new AppError("Please provide an email address", 400));
     }
-
     const user = await User.findOne({ email });
-
     if (!user) {
         return next(new AppError("No user found with this email address", 404));
     }
-
     const resetToken = crypto.randomBytes(32).toString('hex');
-  
+
     user.passwordResetToken = crypto
         .createHash('sha256')
         .update(resetToken)
         .digest('hex');
     
     user.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
-    
     await user.save({ validateBeforeSave: false });
-
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
 
     try {
@@ -334,11 +327,22 @@ exports.forgotPassword = catchAsyncErrors(async (req, res, next) => {
             message: "Password reset link has been sent to your email"
         });
     } catch (error) {
-        user.passwordResetToken = undefined;
-        user.passwordResetExpires = undefined;
-        await user.save({ validateBeforeSave: false });
-
-        return next(new AppError("There was an error sending the email. Please try again later.", 500));
+        console.error("Email sending failed:", error.message);
+        
+        if (process.env.NODE_ENV === 'development') {
+            
+            res.status(200).json({
+                success: true,
+                message: "Password reset link generated. Check server console for the link.",
+                resetUrl: resetUrl
+            });
+        } else {
+            user.passwordResetToken = undefined;
+            user.passwordResetExpires = undefined;
+            await user.save({ validateBeforeSave: false });
+            
+            return next(new AppError("There was an error sending the email. Please try again later.", 500));
+        }
     }
 });
 
