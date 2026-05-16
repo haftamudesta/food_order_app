@@ -16,10 +16,12 @@ const {
     getUserStats,
     uploadProfilePicture,
     removeProfilePicture,
-    forgotPassword
+    forgotPassword,
+    resetPassword
 } = require("../controllers/userControllers");
 
 router.post("/forgot-password", forgotPassword);
+router.post("/reset-password/:token", resetPassword);
 
 router.use(protect); // All routes below require authentication
 

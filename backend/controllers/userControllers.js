@@ -3,8 +3,8 @@ const catchAsyncErrors=require("../middleware/catchAsyncErrors")
 const AppError = require("../utils/errorHandler");
 const { cloudinary, uploadToCloudinary } = require('../config/cloudinary');
 
-
 const crypto = require("crypto");
+const sendEmail = require("../utils/sendEmail");
 
 exports.getProfile = catchAsyncErrors(async (req, res, next) => {
     const user = await User.findById(req.user.id);
@@ -295,29 +295,103 @@ exports.removeProfilePicture = catchAsyncErrors(async (req, res, next) => {
     });
 });
 
-
-
 exports.forgotPassword = catchAsyncErrors(async (req, res, next) => {
     const { email } = req.body;
-
     if (!email) {
         return next(new AppError("Please provide an email address", 400));
     }
-
     const user = await User.findOne({ email });
-
     if (!user) {
         return next(new AppError("No user found with this email address", 404));
     }
+    const resetToken = crypto.randomBytes(32).toString('hex');
 
-    const resetToken = user.createPasswordResetToken();
+    user.passwordResetToken = crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+    
+    user.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
     await user.save({ validateBeforeSave: false });
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
 
-    const resetURL = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+    try {
+        await sendEmail({
+            email: user.email,
+            name: user.name,
+            resetUrl: resetUrl
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Password reset link has been sent to your email"
+        });
+    } catch (error) {
+        console.error("Email sending failed:", error.message);
+        
+        if (process.env.NODE_ENV === 'development') {
+            
+            res.status(200).json({
+                success: true,
+                message: "Password reset link generated. Check server console for the link.",
+                resetUrl: resetUrl
+            });
+        } else {
+            user.passwordResetToken = undefined;
+            user.passwordResetExpires = undefined;
+            await user.save({ validateBeforeSave: false });
+            
+            return next(new AppError("There was an error sending the email. Please try again later.", 500));
+        }
+    }
+});
+
+exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
+    const { token } = req.params;
+    const { password, confirmPassword } = req.body;
+
+    if (!password || !confirmPassword) {
+        return next(new AppError("Please provide password and confirm password", 400));
+    }
+
+    if (password !== confirmPassword) {
+        return next(new AppError("Passwords do not match", 400));
+    }
+
+    if (password.length < 6) {
+        return next(new AppError("Password must be at least 6 characters", 400));
+    }
+
+    const hashedToken = crypto
+        .createHash('sha256')
+        .update(token)
+        .digest('hex');
+
+    const user = await User.findOne({
+        passwordResetToken: hashedToken,
+        passwordResetExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+        return next(new AppError("Token is invalid or has expired", 400));
+    }
+
+    user.password = password;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+
+    const jwtToken = user.getJWTToken();
 
     res.status(200).json({
         success: true,
-        message: "Password reset link sent to your email",
-        resetURL: process.env.NODE_ENV === "development" ? resetURL : undefined
+        message: "Password reset successfully",
+        token: jwtToken,
+        user: {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+        }
     });
 });
