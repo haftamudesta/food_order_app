@@ -1,7 +1,7 @@
 const User = require("../models/user");
 const catchAsyncErrors=require("../middleware/catchAsyncErrors")
 const AppError = require("../utils/errorHandler");
-const { uploadToCloudinary } = require('../config/cloudinary');
+const { cloudinary, uploadToCloudinary } = require('../config/cloudinary');
 
 exports.getProfile = catchAsyncErrors(async (req, res, next) => {
     const user = await User.findById(req.user.id);
@@ -16,8 +16,13 @@ exports.getProfile = catchAsyncErrors(async (req, res, next) => {
     });
 });
 
+
 exports.updateProfile = catchAsyncErrors(async (req, res, next) => {
-    const { name, email,phone } = req.body;
+    const { name, email, phone } = req.body;
+    
+    console.log("Update profile request:", { name, email, phone });
+    console.log("User ID:", req.user.id);
+    
     if (email || phone) {
         const existingUser = await User.findOne({
             _id: { $ne: req.user.id },
@@ -37,11 +42,13 @@ exports.updateProfile = catchAsyncErrors(async (req, res, next) => {
             new: true,
             runValidators: true
         }
-    );
+    ).select("-password");
 
     if (!user) {
         return next(new AppError("User not found", 404));
     }
+
+    console.log("Profile updated successfully:", user._id);
 
     res.status(200).json({
         success: true,
@@ -216,6 +223,9 @@ exports.getUserStats = catchAsyncErrors(async (req, res, next) => {
 
 
 exports.uploadProfilePicture = catchAsyncErrors(async (req, res, next) => {
+    console.log("Upload request received");
+    console.log("File:", req.file);
+    
     if (!req.file) {
         return next(new AppError("Please upload an image", 400));
     }
@@ -225,11 +235,14 @@ exports.uploadProfilePicture = catchAsyncErrors(async (req, res, next) => {
     if (!user) {
         return next(new AppError("User not found", 404));
     }
-
     if (user.profile_pic && user.profile_pic.public_id) {
-        await cloudinary.uploader.destroy(user.profile_pic.public_id);
+        try {
+            await cloudinary.uploader.destroy(user.profile_pic.public_id);
+            console.log("Old image deleted successfully");
+        } catch (err) {
+            console.log("Error deleting old image:", err);
+        }
     }
-
     const result = await uploadToCloudinary(req.file.buffer, 'food_delivery/profiles');
 
     user.profile_pic = {
@@ -238,7 +251,6 @@ exports.uploadProfilePicture = catchAsyncErrors(async (req, res, next) => {
     };
     
     await user.save();
-
     res.status(200).json({
         success: true,
         message: "Profile picture updated successfully",
@@ -261,9 +273,13 @@ exports.removeProfilePicture = catchAsyncErrors(async (req, res, next) => {
     }
 
     if (user.profile_pic && user.profile_pic.public_id) {
-        await cloudinary.uploader.destroy(user.profile_pic.public_id);
+        try {
+            await cloudinary.uploader.destroy(user.profile_pic.public_id);
+            console.log("Image deleted successfully");
+        } catch (err) {
+            console.log("Error deleting image:", err);
+        }
     }
-
     user.profile_pic = null;
     await user.save();
 

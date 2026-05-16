@@ -114,9 +114,35 @@ export const loadUser = () => async (dispatch) => {
 export const updateProfile = (userData) => async (dispatch) => {
     try {
         dispatch(updateRequest());
-        const { data } = await axiosInstance.put("/v1/users/profile", userData, {
+        const { data } = await axiosInstance.put("/v1/users/profile", userData);
+        
+        let updatedUser;
+        if (data.data && data.data.user) {
+            updatedUser = data.data.user;
+        } else if (data.user) {
+            updatedUser = data.user;
+        } else {
+            updatedUser = data;
+        }
+        
+        dispatch(updateSuccess(updatedUser));
+        
+        return { success: true, data: updatedUser };
+        
+    } 
+    catch (error) {
+        const errorMessage = error.response?.data?.message || "Update failed";
+        dispatch(updateFail(errorMessage));
+        return { error: true, message: errorMessage };
+    }
+};
+
+export const updateProfilePicture = (formData) => async (dispatch) => {
+    try {
+        dispatch(updateRequest());
+        const { data } = await axiosInstance.post("/v1/users/upload-profile-pic", formData, {
             headers: {
-                "Content-Type": "multipart/form-data"
+                'Content-Type': 'multipart/form-data'
             }
         });
         
@@ -130,15 +156,48 @@ export const updateProfile = (userData) => async (dispatch) => {
         }
         
         dispatch(updateSuccess(updatedUser));
-        toast.success("Profile updated successfully!");
+        toast.success("Profile picture updated successfully!");
         
         setTimeout(() => {
             dispatch(updateReset());
         }, 3000);
+        
+        return data;
     } catch (error) {
-        const errorMessage = error.response?.data?.message || "Update failed";
+        const errorMessage = error.response?.data?.message || "Failed to upload image";
         dispatch(updateFail(errorMessage));
         toast.error(errorMessage);
+        throw error;
+    }
+};
+
+export const removeProfilePicture = () => async (dispatch) => {
+    try {
+        dispatch(updateRequest());
+        const { data } = await axiosInstance.delete("/v1/users/remove-profile-pic");
+        
+        let updatedUser;
+        if (data.data && data.data.user) {
+            updatedUser = data.data.user;
+        } else if (data.user) {
+            updatedUser = data.user;
+        } else {
+            updatedUser = data;
+        }
+        
+        dispatch(updateSuccess(updatedUser));
+        toast.success("Profile picture removed successfully!");
+        
+        setTimeout(() => {
+            dispatch(updateReset());
+        }, 3000);
+        
+        return data;
+    } catch (error) {
+        const errorMessage = error.response?.data?.message || "Failed to remove image";
+        dispatch(updateFail(errorMessage));
+        toast.error(errorMessage);
+        throw error;
     }
 };
 
@@ -206,16 +265,29 @@ export const updatePassword = (passwordData) => async (dispatch) => {
     try {
         dispatch(updateRequest());
         const { data } = await axiosInstance.put("/v1/users/update-password", passwordData);
-        dispatch(updateSuccess(data.user));
+        
+        let updatedUser;
+        if (data.data && data.data.user) {
+            updatedUser = data.data.user;
+        } else if (data.user) {
+            updatedUser = data.user;
+        } else {
+            updatedUser = data;
+        }
+        
+        dispatch(updateSuccess(updatedUser));
         toast.success("Password updated successfully!");
         
         setTimeout(() => {
             dispatch(updateReset());
         }, 3000);
+        
+        return data;
     } catch (error) {
         const errorMessage = error.response?.data?.message || "Failed to update password";
         dispatch(updateFail(errorMessage));
         toast.error(errorMessage);
+        throw error;
     }
 };
 
