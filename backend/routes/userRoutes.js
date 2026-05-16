@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { upload } = require('../config/cloudinary');
+const { uploadSingle } = require('../config/cloudinary'); 
 const { protect } = require("../middleware/Protect");
 const authorizeRoles = require("../middleware/authorizeRoles");
 const {
@@ -13,7 +13,9 @@ const {
     updateUserRole,
     updateUserStatus,
     deleteUser,
-    getUserStats
+    getUserStats,
+    uploadProfilePicture,
+    removeProfilePicture
 } = require("../controllers/userControllers");
 
 router.use(protect); // All routes below require authentication
@@ -23,8 +25,8 @@ router.get("/profile", getProfile);
 router.put("/profile", updateProfile);
 router.put("/update-password", updatePassword);
 router.delete("/account", deleteAccount);
-router.post('/upload-profile-pic', upload.single('profile_pic'), userControllers.uploadProfilePicture);
-router.delete('/remove-profile-pic', userControllers.removeProfilePicture);
+router.post('/upload-profile-pic', uploadSingle.single('profile_pic'), uploadProfilePicture);
+router.delete('/remove-profile-pic',removeProfilePicture);
 
 router.use(authorizeRoles("admin")); 
 
