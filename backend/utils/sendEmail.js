@@ -1,6 +1,19 @@
+// utils/sendEmail.js
 const nodemailer = require("nodemailer");
 
 const sendEmail = async (options) => {
+    // Check if credentials exist
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+        console.error("Email credentials missing. Please set EMAIL_USER and EMAIL_PASSWORD in .env");
+        // For development, just log the reset link
+        console.log("========================================");
+        console.log("PASSWORD RESET LINK (Email not sent - missing credentials):");
+        console.log(options.resetUrl);
+        console.log("========================================");
+        return false;
+    }
+
+    // Create transporter
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -9,12 +22,12 @@ const sendEmail = async (options) => {
         }
     });
 
+    // Email HTML template
     const htmlTemplate = `
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Password Reset</title>
             <style>
                 body {
@@ -61,13 +74,6 @@ const sendEmail = async (options) => {
                     font-size: 12px;
                     color: #6c757d;
                 }
-                .info {
-                    background-color: #fff3e0;
-                    padding: 15px;
-                    border-radius: 8px;
-                    margin: 20px 0;
-                    border-left: 4px solid #f97316;
-                }
             </style>
         </head>
         <body>
@@ -78,21 +84,19 @@ const sendEmail = async (options) => {
                 </div>
                 <div class="content">
                     <h2 style="color: #333; margin-bottom: 20px;">Hello, ${options.name || 'User'}!</h2>
-                    <p style="color: #555; line-height: 1.6;">We received a request to reset your password for your Food Delivery account.</p>
-                    <div class="info">
-                        <p style="margin: 0; color: #f97316;"><strong>⏰ Link Expires: 10 minutes</strong></p>
-                    </div>
+                    <p style="color: #555; line-height: 1.6;">We received a request to reset your password.</p>
                     <div style="text-align: center;">
                         <a href="${options.resetUrl}" class="button">Reset Password Now</a>
                     </div>
-                    <p style="color: #555; margin-top: 20px;">If the button doesn't work, copy and paste this link into your browser:</p>
+                    <p style="color: #555; margin-top: 20px;">If the button doesn't work, copy and paste this link:</p>
                     <p style="background-color: #f4f4f4; padding: 12px; border-radius: 6px; word-break: break-all; font-size: 12px;">
                         <a href="${options.resetUrl}" style="color: #f97316;">${options.resetUrl}</a>
                     </p>
-                    <p style="color: #555; margin-top: 20px;">If you didn't request this, please ignore this email.</p>
+                    <p style="color: #555; margin-top: 20px;">This link expires in 10 minutes.</p>
+                    <p style="color: #999; margin-top: 30px;">If you didn't request this, please ignore this email.</p>
                 </div>
                 <div class="footer">
-                    <p>&copy; 2024 Food Delivery App. All rights reserved.</p>
+                    <p>&copy; ${currentYear} Food Delivery App. All rights reserved.</p>
                     <p>This is an automated message, please do not reply.</p>
                 </div>
             </div>
@@ -109,10 +113,8 @@ const sendEmail = async (options) => {
 
     try {
         await transporter.sendMail(mailOptions);
-        console.log(`Email sent to ${options.email}`);
         return true;
     } catch (error) {
-        console.error("Email sending failed:", error);
         throw new Error("Failed to send email");
     }
 };
