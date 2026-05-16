@@ -9,7 +9,6 @@ import SignUp from "./pages/user/SignUp";
 import { TermsService } from "./pages/TermsService";
 import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import SignIn from "./pages/user/SignIn";
-import ResetPassword from "./pages/user/ResetPassword";
 import Unauthorized from "./shared/components/fallback/Unauthorized";
 import RestaurantMenuPage from "./pages/restaurant/RestaurantMenuPage";
 import Profile from "./pages/user/Profile";

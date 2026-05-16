@@ -3,6 +3,9 @@ const catchAsyncErrors=require("../middleware/catchAsyncErrors")
 const AppError = require("../utils/errorHandler");
 const { cloudinary, uploadToCloudinary } = require('../config/cloudinary');
 
+
+const crypto = require("crypto");
+
 exports.getProfile = catchAsyncErrors(async (req, res, next) => {
     const user = await User.findById(req.user.id);
 
@@ -294,5 +297,32 @@ exports.removeProfilePicture = catchAsyncErrors(async (req, res, next) => {
                 profile_pic: null
             }
         }
+    });
+});
+
+
+
+exports.forgotPassword = catchAsyncErrors(async (req, res, next) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return next(new AppError("Please provide an email address", 400));
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        return next(new AppError("No user found with this email address", 404));
+    }
+
+    const resetToken = user.createPasswordResetToken();
+    await user.save({ validateBeforeSave: false });
+
+    const resetURL = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+
+    res.status(200).json({
+        success: true,
+        message: "Password reset link sent to your email",
+        resetURL: process.env.NODE_ENV === "development" ? resetURL : undefined
     });
 });

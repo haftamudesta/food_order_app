@@ -18,6 +18,8 @@ const {
     removeProfilePicture
 } = require("../controllers/userControllers");
 
+router.post("/forgot-password", userControllers.forgotPassword);
+
 router.use(protect); // All routes below require authentication
 
 // Profile routes

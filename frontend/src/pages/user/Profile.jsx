@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { Link } from "react-router-dom";
 import {
   updateProfile,
   updateProfilePicture,
   removeProfilePicture,
   updatePassword,
   loadUser,
+  deleteOwnAccount,
 } from "../../redux/actions/userAction";
 import {
   CameraIcon,
@@ -17,6 +19,9 @@ import {
   LockClosedIcon,
   EyeIcon,
   EyeSlashIcon,
+  ArrowPathIcon,
+  KeyIcon,
+  ArrowRightIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
@@ -233,6 +238,22 @@ const Profile = () => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (
+      window.confirm(
+        "Are you sure you want to delete your account? This action cannot be undone.",
+      )
+    ) {
+      try {
+        await dispatch(deleteOwnAccount());
+        toast.success("Account deleted successfully");
+        window.location.href = "/sign-in";
+      } catch (error) {
+        toast.error("Failed to delete account");
+      }
+    }
+  };
+
   const formatDate = (date) => {
     if (!date) return "N/A";
     return new Date(date).toLocaleDateString("en-US", {
@@ -251,7 +272,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-sky-400 to-sky-200 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-sky-400 to-sky-200 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white">My Profile</h1>
@@ -259,7 +280,7 @@ const Profile = () => {
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="h-32 bg-linear-to-r from-orange-500 to-orange-600"></div>
+          <div className="h-32 bg-gradient-to-r from-orange-500 to-orange-600"></div>
 
           <div className="relative px-6 pb-6">
             <div className="flex justify-center -mt-16">
@@ -278,7 +299,7 @@ const Profile = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-orange-100 to-orange-200">
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200">
                       <UserIcon className="w-16 h-16 text-orange-500" />
                     </div>
                   )}
@@ -435,31 +456,79 @@ const Profile = () => {
             </div>
           </div>
 
-          <div className="border-t border-gray-200 px-6 py-6 flex justify-between">
+          {/* Password & Security Section */}
+          <div className="border-t border-gray-200 px-6 py-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Password & Security
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Change Password Button - Opens Modal */}
+              <button
+                onClick={() => setShowPasswordModal(true)}
+                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                    <LockClosedIcon className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-medium text-gray-900">Change Password</p>
+                    <p className="text-sm text-gray-500">
+                      Update your password
+                    </p>
+                  </div>
+                </div>
+                <ArrowPathIcon className="w-5 h-5 text-gray-400" />
+              </button>
+
+              {/* Forgot Password Link - Redirects to page */}
+              <Link
+                to="/forgot-password"
+                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <KeyIcon className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-medium text-gray-900">
+                      Forgot Password?
+                    </p>
+                    <p className="text-sm text-gray-500">Reset your password</p>
+                  </div>
+                </div>
+                <ArrowRightIcon className="w-5 h-5 text-gray-400 group-hover:text-orange-600 transition-colors" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Danger Zone */}
+          <div className="border-t border-gray-200 px-6 py-6">
+            <h3 className="text-lg font-semibold text-red-600 mb-4">
+              Danger Zone
+            </h3>
             <button
-              onClick={() => setShowPasswordModal(true)}
-              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2"
+              onClick={handleDeleteAccount}
+              className="w-full flex items-center justify-between p-4 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
             >
-              <LockClosedIcon className="w-4 h-4" />
-              Change Password
-            </button>
-            <button
-              onClick={() => {
-                if (
-                  window.confirm(
-                    "Are you sure you want to delete your account? This action cannot be undone.",
-                  )
-                ) {
-                  dispatch(deleteAccount());
-                }
-              }}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              Delete Account
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <XCircleIcon className="w-5 h-5 text-red-600" />
+                </div>
+                <div className="text-left">
+                  <p className="font-medium text-red-600">Delete Account</p>
+                  <p className="text-sm text-red-500">
+                    Permanently delete your account and all data
+                  </p>
+                </div>
+              </div>
+              <XCircleIcon className="w-5 h-5 text-red-500" />
             </button>
           </div>
         </div>
       </div>
+
+      {/* Change Password Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
@@ -499,7 +568,7 @@ const Profile = () => {
                         name="currentPassword"
                         value={passwordForm.currentPassword}
                         onChange={handlePasswordChange}
-                        className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                         placeholder="Enter current password"
                       />
                       <button
@@ -529,7 +598,7 @@ const Profile = () => {
                         name="newPassword"
                         value={passwordForm.newPassword}
                         onChange={handlePasswordChange}
-                        className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                         placeholder="Enter new password"
                       />
                       <button
@@ -581,7 +650,7 @@ const Profile = () => {
                         name="confirmPassword"
                         value={passwordForm.confirmPassword}
                         onChange={handlePasswordChange}
-                        className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                         placeholder="Confirm new password"
                       />
                       <button
@@ -619,7 +688,7 @@ const Profile = () => {
                 <button
                   onClick={handleUpdatePassword}
                   disabled={passwordLoading}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {passwordLoading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
