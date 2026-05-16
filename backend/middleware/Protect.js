@@ -12,8 +12,6 @@ exports.protect = async (req, res, next) => {
             token = req.headers.authorization.split(" ")[1];
         }
 
-        console.log("Token present:", !!token);
-
         if (!token) {
             return res.status(401).json({
                 success: false,
@@ -22,7 +20,6 @@ exports.protect = async (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log("Decoded token:", decoded);
 
         const user = await User.findById(decoded.id || decoded.userId).select("-password");
 
@@ -39,10 +36,7 @@ exports.protect = async (req, res, next) => {
                 message: "Your account has been deactivated"
             });
         }
-
         req.user = user;
-        console.log("User attached to request:", req.user._id);
-        
         next();
 
     } catch (error) {

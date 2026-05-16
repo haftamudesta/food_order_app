@@ -9,7 +9,6 @@ import SignUp from "./pages/user/SignUp";
 import { TermsService } from "./pages/TermsService";
 import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import SignIn from "./pages/user/SignIn";
-import ResetPassword from "./pages/user/ResetPassword";
 import Unauthorized from "./shared/components/fallback/Unauthorized";
 import RestaurantMenuPage from "./pages/restaurant/RestaurantMenuPage";
 import Profile from "./pages/user/Profile";
@@ -25,10 +24,12 @@ import LoadingSpinner from "./components/ui/LoadingSpinner";
 import RestaurantDashboard from "./pages/owner/RestaurantDashboard";
 import CreateRestaurant from "./pages/owner/CreateRestaurant";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminRestaurants from "./pages/admin/AdminRestaurants"; // Add this
-import AdminOrders from "./pages/admin/AdminOrders"; // Add this
-import AdminUsers from "./pages/admin/AdminUsers"; // Add this
+import AdminRestaurants from "./pages/admin/AdminRestaurants";
+import AdminOrders from "./pages/admin/AdminOrders";
+import AdminUsers from "./pages/admin/AdminUsers";
 import ProtectedRoute from "./shared/components/ProtectedRoute";
+import ForgotPassword from "./pages/user/ForgotPassword";
+import ResetPassword from "./pages/user/ResetPassword";
 
 function App() {
   const dispatch = useDispatch();
@@ -114,7 +115,8 @@ function App() {
             <Route path="/restaurant/:id" element={<RestaurantMenuPage />} />
             <Route path="/sign-up" element={<SignUp />} />
             <Route path="/sign-in" element={<SignIn />} />
-            <Route path="/forgot-password" element={<ResetPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/terms" element={<TermsService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
