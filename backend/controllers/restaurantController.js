@@ -116,36 +116,83 @@ exports.getRestaurant = catchAsyncErrors(async (req, res, next) => {
   });
 });
 
+const generateSlug = (name) => {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
 exports.updateRestaurant = catchAsyncErrors(async (req, res, next) => {
-  let restaurant = await Restaurant.findById(req.params.id);
-  
-  if (!restaurant) {
-    return next(new AppError('No restaurant found with that ID', 404));
-  }
-  
-  if (restaurant.owner.toString() !== req.user.id && req.user.role !== 'admin') {
-    return next(new AppError('You do not have permission to update this restaurant', 403));
-  }
-  
-  const allowedUpdates = [
-    'name', 'description', 'cuisine', 'address', 'contact', 
-    'operatingHours', 'pricing', 'amenities', 'images'
-  ];
-  
-  allowedUpdates.forEach(field => {
-    if (req.body[field]) {
-      restaurant[field] = req.body[field];
+    let restaurant = await Restaurant.findById(req.params.id);
+    
+    if (!restaurant) {
+        return next(new AppError('No restaurant found with that ID', 404));
     }
-  });
-  
-  await restaurant.save();
-  
-  res.status(200).json({
-    status: 'success',
-    data: {
-      restaurant
+    
+    if (restaurant.owner.toString() !== req.user.id && req.user.role !== 'admin') {
+        return next(new AppError('You do not have permission to update this restaurant', 403));
     }
-  });
+    
+    if (req.body.name && req.body.name !== restaurant.name) {
+        req.body.slug = generateSlug(req.body.name);
+        
+        const existingRestaurant = await Restaurant.findOne({ slug: req.body.slug, _id: { $ne: req.params.id } });
+        if (existingRestaurant) {
+            return next(new AppError('Restaurant with similar name already exists', 400));
+        }
+    }
+    
+    delete req.body._id;
+    delete req.body.__v;
+    delete req.body.createdAt;
+    delete req.body.updatedAt;
+    
+    Object.keys(req.body).forEach(key => {
+        if (req.body[key] !== undefined) {
+            restaurant[key] = req.body[key];
+        }
+    });
+    
+    if (req.body.address && req.body.address.coordinates) {
+        if (!restaurant.address) restaurant.address = {};
+        restaurant.address.coordinates = {
+            type: 'Point',
+            coordinates: req.body.address.coordinates.coordinates || [0, 0]
+        };
+    }
+    
+    await restaurant.save();
+    
+    res.status(200).json({
+        status: 'success',
+        data: {
+            restaurant
+        }
+    });
+});
+
+
+exports.createRestaurant = catchAsyncErrors(async (req, res, next) => {
+    req.body.owner = req.user.id;
+    
+    if (req.body.name) {
+        req.body.slug = generateSlug(req.body.name);
+        
+        const existingRestaurant = await Restaurant.findOne({ slug: req.body.slug });
+        if (existingRestaurant) {
+            return next(new AppError('Restaurant with this name already exists', 400));
+        }
+    }
+    
+    const restaurant = await Restaurant.create(req.body);
+    
+    res.status(201).json({
+        status: 'success',
+        data: {
+            restaurant
+        }
+    });
 });
 
 exports.deleteRestaurant = catchAsyncErrors(async (req, res, next) => {
@@ -267,7 +314,6 @@ exports.getRestaurantStats = catchAsyncErrors(async (req, res, next) => {
     }}
   ]);
   
-  // Get menu statistics
   const menuStats = await Menu.aggregate([
     { $match: { restaurant: restaurant._id } },
     { $group: {
@@ -280,7 +326,7 @@ exports.getRestaurantStats = catchAsyncErrors(async (req, res, next) => {
     { $sort: { _id: 1 } }
   ]);
   
-  // Calculate rating distribution
+  
   let ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   if (reviewStats[0] && reviewStats[0].ratingDistribution) {
     reviewStats[0].ratingDistribution.forEach(rating => {

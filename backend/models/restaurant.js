@@ -131,6 +131,10 @@ const restaurantSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  isVeg: {
+    type: Boolean,
+    default: false
+  },
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -143,51 +147,37 @@ const restaurantSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes
 restaurantSchema.index({ name: 'text', description: 'text', 'cuisine': 'text' });
 restaurantSchema.index({ 'address.city': 1, rating: -1 });
 restaurantSchema.index({ 'address.coordinates': '2dsphere' });
 
-// Pre-save middleware
-restaurantSchema.pre('save', function(next) {
-  if (this.isModified('name')) {
-    this.slug = this.name
-      .toLowerCase()
-      .replace(/[^\w\s]/g, '')
-      .replace(/\s+/g, '-');
-  }
-  next();
-});
-
-// Virtual for full address
 restaurantSchema.virtual('fullAddress').get(function() {
+  if (!this.address) return '';
   return `${this.address.street}, ${this.address.city}, ${this.address.state} ${this.address.zipCode}, ${this.address.country}`;
 });
 
-// Virtual for menu items
 restaurantSchema.virtual('menuItems', {
   ref: 'MenuItem',
   localField: '_id',
   foreignField: 'restaurant'
 });
 
-// Virtual for reviews
 restaurantSchema.virtual('reviews', {
   ref: 'Review',
   localField: '_id',
   foreignField: 'restaurant'
 });
 
-// Method to check if restaurant is open at given time
+
 restaurantSchema.methods.isOpen = function(day, time) {
-  const hours = this.operatingHours[day.toLowerCase()];
-  if (hours.isClosed) return false;
+  if (!this.operatingHours) return false;
+  const hours = this.operatingHours[day?.toLowerCase()];
+  if (!hours || hours.isClosed) return false;
   
   const currentTime = time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
   return currentTime >= hours.open && currentTime <= hours.close;
 };
 
-
-const Restaurant = mongoose.model('Restaurant', restaurantSchema);
+const Restaurant = mongoose.models.Restaurant || mongoose.model('Restaurant', restaurantSchema);
 
 module.exports = Restaurant;

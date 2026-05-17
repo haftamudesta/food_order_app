@@ -1,3 +1,4 @@
+// pages/owner/EditRestaurant.jsx - Add coordinates fields
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
@@ -9,8 +10,8 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import {
   BuildingStorefrontIcon,
   XMarkIcon,
-  PlusIcon,
   PhotoIcon,
+  MapPinIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
@@ -23,6 +24,7 @@ const EditRestaurant = () => {
   );
   const { user } = useSelector((state) => state.user);
 
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -33,6 +35,10 @@ const EditRestaurant = () => {
       state: "",
       zipCode: "",
       country: "",
+      coordinates: {
+        type: "Point",
+        coordinates: [0, 0], // [longitude, latitude]
+      },
     },
     contact: {
       phone: "",
@@ -57,20 +63,33 @@ const EditRestaurant = () => {
 
   const [cuisineInput, setCuisineInput] = useState("");
   const [errors, setErrors] = useState({});
-  const [imageFiles, setImageFiles] = useState([]);
-  const [imagePreviews, setImagePreviews] = useState([]);
-  const [uploadingImages, setUploadingImages] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [longitude, setLongitude] = useState("");
+  const [latitude, setLatitude] = useState("");
 
+  // Fetch restaurant data when component mounts
   useEffect(() => {
     if (!user || (user.role !== "admin" && user.role !== "restaurant_owner")) {
       navigate("/unauthorized");
       return;
     }
+
+    console.log("Fetching restaurant with ID:", id);
     dispatch(getRestaurantById(id));
   }, [dispatch, id, user, navigate]);
 
+  // Update form data when selectedRestaurant changes
   useEffect(() => {
-    if (selectedRestaurant) {
+    if (selectedRestaurant && selectedRestaurant._id === id) {
+      console.log("Restaurant data loaded:", selectedRestaurant);
+
+      // Get coordinates if they exist
+      const coords = selectedRestaurant.address?.coordinates?.coordinates || [
+        0, 0,
+      ];
+      setLongitude(coords[0]?.toString() || "");
+      setLatitude(coords[1]?.toString() || "");
+
       setFormData({
         name: selectedRestaurant.name || "",
         description: selectedRestaurant.description || "",
@@ -81,6 +100,10 @@ const EditRestaurant = () => {
           state: selectedRestaurant.address?.state || "",
           zipCode: selectedRestaurant.address?.zipCode || "",
           country: selectedRestaurant.address?.country || "",
+          coordinates: {
+            type: "Point",
+            coordinates: coords,
+          },
         },
         contact: {
           phone: selectedRestaurant.contact?.phone || "",
@@ -106,11 +129,9 @@ const EditRestaurant = () => {
             : true,
       });
 
-      if (selectedRestaurant.images && selectedRestaurant.images.length > 0) {
-        setImagePreviews(selectedRestaurant.images.map((img) => img.url));
-      }
+      setIsDataLoaded(true);
     }
-  }, [selectedRestaurant]);
+  }, [selectedRestaurant, id]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -130,6 +151,28 @@ const EditRestaurant = () => {
       }));
     }
   };
+
+  const handleCoordinatesChange = () => {
+    const lng = parseFloat(longitude);
+    const lat = parseFloat(latitude);
+
+    if (!isNaN(lng) && !isNaN(lat)) {
+      setFormData((prev) => ({
+        ...prev,
+        address: {
+          ...prev.address,
+          coordinates: {
+            type: "Point",
+            coordinates: [lng, lat],
+          },
+        },
+      }));
+    }
+  };
+
+  useEffect(() => {
+    handleCoordinatesChange();
+  }, [longitude, latitude]);
 
   const handleOperatingHoursChange = (day, field, value) => {
     setFormData((prev) => ({
@@ -161,25 +204,6 @@ const EditRestaurant = () => {
     }));
   };
 
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    setImageFiles([...imageFiles, ...files]);
-
-    // Create previews
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreviews((prev) => [...prev, reader.result]);
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const removeImage = (index) => {
-    setImageFiles(imageFiles.filter((_, i) => i !== index));
-    setImagePreviews(imagePreviews.filter((_, i) => i !== index));
-  };
-
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name) newErrors.name = "Restaurant name is required";
@@ -192,6 +216,9 @@ const EditRestaurant = () => {
     if (!formData.pricing.averageCost || formData.pricing.averageCost <= 0) {
       newErrors.averageCost = "Average cost is required";
     }
+    if (!longitude || !latitude) {
+      newErrors.coordinates = "Location coordinates are required";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -201,29 +228,41 @@ const EditRestaurant = () => {
     e.preventDefault();
     if (!validateForm()) return;
 
+    setUpdating(true);
     try {
       const updateData = { ...formData };
-
-      if (imageFiles.length > 0) {
-        const formDataImages = new FormData();
-        imageFiles.forEach((file) => {
-          formDataImages.append("images", file);
-        });
-        //  image upload endpoint will be implemented soon
-      }
-
       await dispatch(updateRestaurant({ id, updateData })).unwrap();
       toast.success("Restaurant updated successfully!");
       navigate("/owner/dashboard");
     } catch (error) {
       toast.error(error || "Failed to update restaurant");
+    } finally {
+      setUpdating(false);
     }
   };
 
-  if (loading || !selectedRestaurant) {
+  // Show loading while fetching data
+  if (loading || !isDataLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="large" />
+      </div>
+    );
+  }
+
+  // If no restaurant data after loading
+  if (!selectedRestaurant || selectedRestaurant._id !== id) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-500">Restaurant not found</p>
+          <button
+            onClick={() => navigate("/owner/dashboard")}
+            className="mt-4 text-orange-600 hover:text-orange-700"
+          >
+            Go back to Dashboard
+          </button>
+        </div>
       </div>
     );
   }
@@ -248,10 +287,14 @@ const EditRestaurant = () => {
               <h1 className="text-xl font-semibold text-white">
                 Edit Restaurant
               </h1>
+              <span className="ml-2 text-sm text-orange-200">
+                ID: {id?.slice(-8)}
+              </span>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {/* Basic Information */}
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 Basic Information
@@ -365,9 +408,10 @@ const EditRestaurant = () => {
               </div>
             </div>
 
+            {/* Address with Coordinates */}
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Address
+                Address & Location
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
@@ -419,8 +463,54 @@ const EditRestaurant = () => {
                   className="px-3 py-2 border border-gray-300 rounded-lg"
                 />
               </div>
+
+              {/* Coordinates Fields */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Restaurant Location (Google Maps)
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Longitude
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={longitude}
+                      onChange={(e) => setLongitude(e.target.value)}
+                      placeholder="e.g., -122.4194"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Latitude
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={latitude}
+                      onChange={(e) => setLatitude(e.target.value)}
+                      placeholder="e.g., 37.7749"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                </div>
+                {errors.coordinates && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.coordinates}
+                  </p>
+                )}
+                <p className="text-xs text-gray-400 mt-2">
+                  <MapPinIcon className="w-3 h-3 inline mr-1" />
+                  You can get coordinates from Google Maps by right-clicking on
+                  the location and selecting "What's here?"
+                </p>
+              </div>
             </div>
 
+            {/* Contact Information */}
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 Contact Information
@@ -448,6 +538,7 @@ const EditRestaurant = () => {
               </div>
             </div>
 
+            {/* Operating Hours */}
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 Operating Hours
@@ -506,6 +597,7 @@ const EditRestaurant = () => {
               </div>
             </div>
 
+            {/* Pricing */}
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 Pricing
@@ -546,44 +638,8 @@ const EditRestaurant = () => {
                 </div>
               </div>
             </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Restaurant Images
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                {imagePreviews.map((preview, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={preview}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <XMarkIcon className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-                <label className="border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center h-32 cursor-pointer hover:border-orange-500 transition-colors">
-                  <PhotoIcon className="w-8 h-8 text-gray-400" />
-                  <span className="text-sm text-gray-500 mt-1">Add Image</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageChange}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-              <p className="text-xs text-gray-500">
-                You can upload multiple images. First image will be the cover.
-              </p>
-            </div>
 
+            {/* Submit Buttons */}
             <div className="flex justify-end gap-3 pt-4 border-t">
               <button
                 type="button"
@@ -594,10 +650,10 @@ const EditRestaurant = () => {
               </button>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={updating}
                 className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50"
               >
-                {loading ? "Updating..." : "Update Restaurant"}
+                {updating ? "Updating..." : "Update Restaurant"}
               </button>
             </div>
           </form>

@@ -30,6 +30,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import ProtectedRoute from "./shared/components/ProtectedRoute";
 import ForgotPassword from "./pages/user/ForgotPassword";
 import ResetPassword from "./pages/user/ResetPassword";
+import EditRestaurant from "./pages/owner/EditRestaurant";
 
 function App() {
   const dispatch = useDispatch();
@@ -145,11 +146,12 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/owner/restaurants/:id/edit"
               element={
                 <ProtectedRoute allowedRoles={["restaurant_owner", "admin"]}>
-                  <CreateRestaurant />
+                  <EditRestaurant />
                 </ProtectedRoute>
               }
             />

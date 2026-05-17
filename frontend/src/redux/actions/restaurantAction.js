@@ -177,7 +177,7 @@ export const updateRestaurant = createAsyncThunk(
   }
 );
 
-// Soft delete restaurant (set isActive to false)
+
 export const deleteRestaurant = createAsyncThunk(
   "restaurants/deleteRestaurant",
   async (id, { rejectWithValue }) => {
