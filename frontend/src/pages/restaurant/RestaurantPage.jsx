@@ -1,25 +1,32 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-
+import { useNavigate } from "react-router-dom";
 import {
   FunnelIcon,
   StarIcon,
   ChatBubbleLeftRightIcon,
   XMarkIcon,
+  PencilIcon,
+  TrashIcon,
 } from "@heroicons/react/24/solid";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import ErrorAlert from "../../components/ui/ErrorAlert";
 import RestaurantCard from "@/shared/components/cards/RestaurantCard";
-import { getRestaurants } from "../../redux/actions/restaurantAction";
+import {
+  getRestaurants,
+  deleteRestaurant,
+} from "../../redux/actions/restaurantAction";
 import {
   sortByRating,
   sortByReview,
   toggleVegOnly,
   clearError,
-} from "../../redux/slices/restaurantSlice"; 
+} from "../../redux/slices/restaurantSlice";
+import toast from "react-hot-toast";
 
 const RestaurantsPage = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const {
     restaurants = [],
     count,
@@ -28,12 +35,14 @@ const RestaurantsPage = () => {
     showVegOnly,
     pureVegRestaurantCount,
   } = useSelector((state) => state.restaurants || { restaurants: [] });
+  const { user } = useSelector((state) => state.user);
 
   const [searchKeyword, setSearchKeyword] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedCuisine, setSelectedCuisine] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
   const [priceRange, setPriceRange] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
 
   const allCuisines =
     restaurants && restaurants.length > 0
@@ -72,6 +81,37 @@ const RestaurantsPage = () => {
     setPriceRange("");
     setSearchKeyword("");
     dispatch(getRestaurants(""));
+  };
+
+  const handleEditRestaurant = (restaurantId) => {
+    navigate(`/owner/restaurants/${restaurantId}/edit`);
+  };
+
+  const handleDeleteRestaurant = async (restaurantId, restaurantName) => {
+    if (
+      window.confirm(
+        `Are you sure you want to delete "${restaurantName}"? This action cannot be undone.`,
+      )
+    ) {
+      setDeletingId(restaurantId);
+      try {
+        await dispatch(deleteRestaurant(restaurantId)).unwrap();
+        toast.success("Restaurant deleted successfully");
+        dispatch(getRestaurants(searchKeyword));
+      } catch (error) {
+        toast.error(error || "Failed to delete restaurant");
+      } finally {
+        setDeletingId(null);
+      }
+    }
+  };
+
+  const canModifyRestaurant = (restaurant) => {
+    if (!user) return false;
+    if (user.role === "admin") return true;
+    if (user.role === "restaurant_owner" && restaurant.owner?._id === user._id)
+      return true;
+    return false;
   };
 
   let filteredRestaurants =
@@ -131,7 +171,7 @@ const RestaurantsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-linear-to-r from-emerald-300 to-emerald-600 text-white py-16">
+      <div className="bg-gradient-to-r from-emerald-300 to-emerald-600 text-white py-16">
         <div className="container mx-auto px-4">
           <h1 className="text-4xl md:text-5xl font-bold text-center mb-4">
             Discover Amazing Restaurants
@@ -158,6 +198,7 @@ const RestaurantsPage = () => {
           </div>
         </div>
       </div>
+
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -169,7 +210,10 @@ const RestaurantsPage = () => {
               <span>Filters</span>
               {hasActiveFilters && (
                 <span className="bg-orange-600 text-white text-xs rounded-full px-2 py-0.5">
-                  {showVegOnly ? 1 : 0}
+                  {(showVegOnly ? 1 : 0) +
+                    (selectedCuisine ? 1 : 0) +
+                    (selectedCity ? 1 : 0) +
+                    (priceRange ? 1 : 0)}
                 </span>
               )}
             </button>
@@ -231,6 +275,7 @@ const RestaurantsPage = () => {
                   ))}
                 </select>
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   City
@@ -249,6 +294,7 @@ const RestaurantsPage = () => {
                   ))}
                 </select>
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Price Range
@@ -304,7 +350,35 @@ const RestaurantsPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredRestaurants.map((restaurant) => (
-              <RestaurantCard key={restaurant._id} restaurant={restaurant} />
+              <div key={restaurant._id} className="relative group">
+                <RestaurantCard restaurant={restaurant} />
+
+                {canModifyRestaurant(restaurant) && (
+                  <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <button
+                      onClick={() => handleEditRestaurant(restaurant._id)}
+                      className="bg-white p-2 rounded-full shadow-md hover:bg-orange-50 transition-colors"
+                      title="Edit Restaurant"
+                    >
+                      <PencilIcon className="w-5 h-5 text-orange-600" />
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleDeleteRestaurant(restaurant._id, restaurant.name)
+                      }
+                      disabled={deletingId === restaurant._id}
+                      className="bg-white p-2 rounded-full shadow-md hover:bg-red-50 transition-colors disabled:opacity-50"
+                      title="Delete Restaurant"
+                    >
+                      {deletingId === restaurant._id ? (
+                        <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <TrashIcon className="w-5 h-5 text-red-600" />
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}

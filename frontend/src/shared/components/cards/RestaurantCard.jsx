@@ -1,173 +1,141 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   StarIcon,
   MapPinIcon,
   CurrencyDollarIcon,
-  ClockIcon,
+  PencilIcon,
+  TrashIcon,
 } from "@heroicons/react/24/solid";
-import { StarIcon as StarOutlineIcon } from "@heroicons/react/24/outline";
 
-const RestaurantCard = ({ restaurant }) => {
-  const { _id, name, description, cuisine, rating, images, pricing, address } =
-    restaurant;
+const RestaurantCard = ({ restaurant, onEdit, onDelete, isDeleting }) => {
+  const { user } = useSelector((state) => state.user);
 
-  const primaryImage = images?.find((img) => img.isPrimary) || images?.[0];
-  const displayImage =
-    primaryImage?.url || "/images/restaurant-placeholder.jpg";
-
-  const renderStars = (averageRating) => {
-    const stars = [];
-    const fullStars = Math.floor(averageRating);
-    const hasHalfStar = averageRating % 1 >= 0.5;
-
-    for (let i = 1; i <= 5; i++) {
-      if (i <= fullStars) {
-        stars.push(<StarIcon key={i} className="w-4 h-4 text-yellow-400" />);
-      } else if (i === fullStars + 1 && hasHalfStar) {
-        stars.push(
-          <div key={i} className="relative">
-            <StarOutlineIcon className="w-4 h-4 text-yellow-400" />
-            <StarIcon className="w-4 h-4 text-yellow-400 absolute top-0 left-0 clip-half" />
-          </div>,
-        );
-      } else {
-        stars.push(
-          <StarOutlineIcon key={i} className="w-4 h-4 text-gray-300" />,
-        );
-      }
-    }
-    return stars;
+  const canModify = () => {
+    if (!user) return false;
+    if (user.role === "admin") return true;
+    if (user.role === "restaurant_owner" && restaurant.owner?._id === user._id)
+      return true;
+    return false;
   };
 
-  const getPriceRange = (averageCost) => {
-    if (!averageCost) return "N/A";
-    if (averageCost < 15) return "$";
-    if (averageCost < 30) return "$$";
-    if (averageCost < 50) return "$$$";
+  const getPriceSymbol = (cost) => {
+    if (!cost) return "$$";
+    if (cost < 15) return "$";
+    if (cost < 30) return "$$";
+    if (cost < 50) return "$$$";
     return "$$$$";
   };
 
-  const truncateText = (text, maxLength = 100) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + "...";
-  };
-
   return (
-    <Link
-      to={`/restaurant/${_id}`}
-      className="group block bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1"
-    >
-      <div className="relative h-48 overflow-hidden">
-        <img
-          src={displayImage}
-          alt={name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        {restaurant.isVerified && (
-          <div className="absolute top-3 right-3 bg-green-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Verified
+    <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full">
+      <Link
+        to={`/restaurant/${restaurant._id}`}
+        className="block relative h-48 overflow-hidden"
+      >
+        {restaurant.images && restaurant.images.length > 0 ? (
+          <img
+            src={restaurant.images[0].url}
+            alt={restaurant.name}
+            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
+            <span className="text-white text-lg font-bold">No Image</span>
           </div>
         )}
-        {restaurant.isActive === false && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-              Temporarily Closed
-            </span>
-          </div>
-        )}
-      </div>
-      <div className="p-4">
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="text-lg font-bold text-gray-900 group-hover:text-orange-600 transition-colors">
-            {name}
-          </h3>
-          {rating?.average > 0 && (
-            <div className="flex items-center gap-1 bg-green-600 text-white px-2 py-0.5 rounded-full text-sm">
-              <span className="font-semibold">{rating.average.toFixed(1)}</span>
-              <StarIcon className="w-3 h-3" />
-            </div>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-1 mb-2">
-          {cuisine?.slice(0, 3).map((type, index) => (
-            <span
-              key={index}
-              className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"
-            >
-              {type}
-            </span>
-          ))}
-          {cuisine?.length > 3 && (
-            <span className="text-xs text-gray-500">+{cuisine.length - 3}</span>
-          )}
-        </div>
-        <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-          {truncateText(description)}
-        </p>
-        <div className="space-y-1.5 text-sm text-gray-500">
-          <div className="flex items-center gap-2">
-            <MapPinIcon className="w-4 h-4 shrink-0" />
-            <span className="truncate">
-              {address?.street}, {address?.city}
-            </span>
-          </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CurrencyDollarIcon className="w-4 h-4" />
-              <span className="font-medium text-gray-700">
-                {getPriceRange(pricing?.averageCost)}
-              </span>
-              {pricing?.averageCost && (
-                <span className="text-xs">avg ${pricing.averageCost}</span>
+        {restaurant.rating?.average > 0 && (
+          <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
+            <StarIcon className="w-4 h-4 text-yellow-500" />
+            <span className="text-sm font-semibold text-gray-800">
+              {restaurant.rating.average.toFixed(1)}
+            </span>
+            <span className="text-xs text-gray-500">
+              ({restaurant.rating.count || 0})
+            </span>
+          </div>
+        )}
+
+        {restaurant.isVeg && (
+          <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+            Pure Veg
+          </div>
+        )}
+      </Link>
+
+      <div className="p-4 flex-1">
+        <Link to={`/restaurant/${restaurant._id}`}>
+          <h3 className="text-lg font-bold text-gray-800 hover:text-orange-600 transition-colors line-clamp-1">
+            {restaurant.name}
+          </h3>
+        </Link>
+
+        <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+          {restaurant.description || "No description available"}
+        </p>
+
+        <div className="mt-3 space-y-2">
+          {restaurant.cuisine && restaurant.cuisine.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {restaurant.cuisine.slice(0, 3).map((cuisine, idx) => (
+                <span
+                  key={idx}
+                  className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
+                >
+                  {cuisine}
+                </span>
+              ))}
+              {restaurant.cuisine.length > 3 && (
+                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                  +{restaurant.cuisine.length - 3}
+                </span>
               )}
             </div>
+          )}
+          {restaurant.address?.city && (
+            <div className="flex items-center gap-1 text-sm text-gray-500">
+              <MapPinIcon className="w-4 h-4" />
+              <span>{restaurant.address.city}</span>
+            </div>
+          )}
 
-            {rating?.count > 0 && (
-              <span className="text-xs">
-                ({rating.count} {rating.count === 1 ? "review" : "reviews"})
+          {restaurant.pricing?.averageCost && (
+            <div className="flex items-center gap-1 text-sm text-gray-500">
+              <CurrencyDollarIcon className="w-4 h-4" />
+              <span>{getPriceSymbol(restaurant.pricing.averageCost)}</span>
+              <span className="text-xs text-gray-400">
+                avg ${restaurant.pricing.averageCost} for two
               </span>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <ClockIcon className="w-3 h-3" />
-            <span>Check hours</span>
-          </div>
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              //  to be implemented favorites logic
-            }}
-            className="text-gray-400 hover:text-red-500 transition-colors"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-              />
-            </svg>
-          </button>
+            </div>
+          )}
         </div>
       </div>
-    </Link>
+      {canModify() && (
+        <div className="border-t border-gray-100 p-3 flex gap-2 bg-gray-50">
+          <button
+            onClick={() => onEdit(restaurant._id)}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium"
+          >
+            <PencilIcon className="w-4 h-4" />
+            Edit
+          </button>
+          <button
+            onClick={() => onDelete(restaurant._id, restaurant.name)}
+            disabled={isDeleting === restaurant._id}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isDeleting === restaurant._id ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <TrashIcon className="w-4 h-4" />
+            )}
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
   );
 };
 

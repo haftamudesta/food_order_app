@@ -3,7 +3,6 @@ const nodemailer = require("nodemailer");
 const sendEmail = async (options) => {
     const currentYear = new Date().getFullYear();
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-
         return false;
     }
     const transporter = nodemailer.createTransport({
