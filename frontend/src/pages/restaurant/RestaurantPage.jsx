@@ -6,8 +6,6 @@ import {
   StarIcon,
   ChatBubbleLeftRightIcon,
   XMarkIcon,
-  PencilIcon,
-  TrashIcon,
 } from "@heroicons/react/24/solid";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import ErrorAlert from "../../components/ui/ErrorAlert";
@@ -104,14 +102,6 @@ const RestaurantsPage = () => {
         setDeletingId(null);
       }
     }
-  };
-
-  const canModifyRestaurant = (restaurant) => {
-    if (!user) return false;
-    if (user.role === "admin") return true;
-    if (user.role === "restaurant_owner" && restaurant.owner?._id === user._id)
-      return true;
-    return false;
   };
 
   let filteredRestaurants =
@@ -350,35 +340,13 @@ const RestaurantsPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredRestaurants.map((restaurant) => (
-              <div key={restaurant._id} className="relative group">
-                <RestaurantCard restaurant={restaurant} />
-
-                {canModifyRestaurant(restaurant) && (
-                  <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <button
-                      onClick={() => handleEditRestaurant(restaurant._id)}
-                      className="bg-white p-2 rounded-full shadow-md hover:bg-orange-50 transition-colors"
-                      title="Edit Restaurant"
-                    >
-                      <PencilIcon className="w-5 h-5 text-orange-600" />
-                    </button>
-                    <button
-                      onClick={() =>
-                        handleDeleteRestaurant(restaurant._id, restaurant.name)
-                      }
-                      disabled={deletingId === restaurant._id}
-                      className="bg-white p-2 rounded-full shadow-md hover:bg-red-50 transition-colors disabled:opacity-50"
-                      title="Delete Restaurant"
-                    >
-                      {deletingId === restaurant._id ? (
-                        <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-                      ) : (
-                        <TrashIcon className="w-5 h-5 text-red-600" />
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
+              <RestaurantCard
+                key={restaurant._id}
+                restaurant={restaurant}
+                onEdit={handleEditRestaurant}
+                onDelete={handleDeleteRestaurant}
+                isDeleting={deletingId}
+              />
             ))}
           </div>
         )}
