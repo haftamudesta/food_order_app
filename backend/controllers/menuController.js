@@ -101,11 +101,16 @@ exports.removeItemsFromMenu = catchAsyncErrors(async (req, res, next) => {
 });
 
 exports.getMenuByRestaurant = catchAsyncErrors(async (req, res, next) => {
-    const menu = await Menu.findOne({ restaurant: req.params.restaurantId })
-        .populate("menu.items");
+    const { restaurantId } = req.params;
+    
+    let menu = await Menu.findOne({ restaurant: restaurantId }).populate("menu.items");
     
     if (!menu) {
-        return next(new AppError("Menu not found for this restaurant", 404));
+        return res.status(200).json({
+            success: true,
+            data: null,
+            message: "No menu found for this restaurant"
+        });
     }
     
     res.status(200).json({

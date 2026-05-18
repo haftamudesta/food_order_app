@@ -84,7 +84,6 @@ exports.createFoodItem = catchAsyncErrors(async (req, res, next) => {
 });
 
 exports.updateFoodItem = catchAsyncErrors(async (req, res, next) => {
-    // Add updatedBy user ID
     req.body.updatedBy = req.user.id;
     
     let foodItem = await FoodItem.findById(req.params.id);
@@ -92,7 +91,7 @@ exports.updateFoodItem = catchAsyncErrors(async (req, res, next) => {
     if (!foodItem) {
         return next(new AppError("Food item not found", 404));
     }
-    
+
     // Check if updating name and if it already exists
     if (req.body.name && req.body.name !== foodItem.name) {
         const existingItem = await FoodItem.findOne({
@@ -130,9 +129,6 @@ exports.deleteFoodItem = catchAsyncErrors(async (req, res, next) => {
     // Option 1: Soft delete (recommended)
     foodItem.isAvailable = false;
     await foodItem.save();
-    
-    // Option 2: Hard delete (uncomment if you want permanent deletion)
-    // await foodItem.remove();
     
     res.status(200).json({
         success: true,

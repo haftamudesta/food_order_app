@@ -2,14 +2,21 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { getRestaurantById } from "../../redux/actions/restaurantAction";
-import { createMenu, getAllMenus } from "../../redux/actions/menuAction";
+import {
+  createMenu,
+  getMenuByRestaurant,
+  addItemsToMenu,
+  removeItemsFromMenu,
+  updateCategoryName,
+} from "../../redux/actions/menuAction";
 import { getAllFoodItems } from "../../redux/actions/foodActions";
 import {
   ArrowLeftIcon,
   PlusIcon,
   TrashIcon,
   XMarkIcon,
-  ChevronDownIcon,
+  PencilIcon,
+  CheckIcon,
 } from "@heroicons/react/24/outline";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import toast from "react-hot-toast";
@@ -24,164 +31,166 @@ const CreateMenuPage = () => {
   const { foodItems = [], loading: foodLoading } = useSelector(
     (state) => state.food,
   );
-  const { menus, loading: menuLoading } = useSelector((state) => state.menu);
+  const {
+    currentMenu,
+    loading: menuLoading,
+    categories: menuCategories,
+  } = useSelector((state) => state.menu);
 
-  const [categories, setCategories] = useState([
-    { category: "", items: [], isEditing: false },
-  ]);
-  const [availableFoodItems, setAvailableFoodItems] = useState([]);
-  const [existingMenu, setExistingMenu] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [editingName, setEditingName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   useEffect(() => {
     if (id) {
       dispatch(getRestaurantById(id));
       dispatch(getAllFoodItems({ restaurantId: id, isAvailable: true }));
-      dispatch(getAllMenus({ restaurantId: id }));
+      dispatch(getMenuByRestaurant(id));
     }
   }, [dispatch, id]);
 
   useEffect(() => {
-    if (menus && menus.length > 0) {
-      const existing = menus.find((menu) => menu.restaurant === id);
-      if (existing) {
-        setExistingMenu(existing);
-        if (existing.menu && existing.menu.length > 0) {
-          const existingCategories = existing.menu.map((cat) => ({
-            category: cat.category,
-            items: cat.items || [],
-            isEditing: false,
-          }));
-          setCategories(existingCategories);
-        }
-      }
+    if (currentMenu && currentMenu.menu) {
+      setCategories(currentMenu.menu);
+    } else {
+      setCategories([]);
     }
-  }, [menus, id]);
+  }, [currentMenu]);
 
-  // Set available food items
-  useEffect(() => {
-    if (foodItems && foodItems.length > 0) {
-      setAvailableFoodItems(foodItems);
-    }
-  }, [foodItems]);
-
-  const addCategory = () => {
-    setCategories([
-      ...categories,
-      { category: "", items: [], isEditing: true },
-    ]);
-  };
-
-  const removeCategory = (index) => {
-    if (categories.length === 1) {
-      toast.error("At least one category is required");
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast.error("Please enter a category name");
       return;
     }
-    const newCategories = categories.filter((_, i) => i !== index);
-    setCategories(newCategories);
-  };
 
-  const updateCategoryName = (index, value) => {
-    const newCategories = [...categories];
-    newCategories[index].category = value;
-    setCategories(newCategories);
-  };
+    if (!currentMenu) {
+      const menuData = {
+        restaurant: id,
+        menu: [{ category: newCategoryName.trim(), items: [] }],
+      };
 
-  const toggleCategoryEdit = (index) => {
-    const newCategories = [...categories];
-    newCategories[index].isEditing = !newCategories[index].isEditing;
-    setCategories(newCategories);
-  };
-
-  const addItemToCategory = (categoryIndex, foodItemId) => {
-    const foodItem = availableFoodItems.find((item) => item._id === foodItemId);
-    if (!foodItem) return;
-
-    const newCategories = [...categories];
-    if (!newCategories[categoryIndex].items.includes(foodItemId)) {
-      newCategories[categoryIndex].items.push(foodItemId);
-      setCategories(newCategories);
-      toast.success(
-        `Added "${foodItem.name}" to ${newCategories[categoryIndex].category}`,
-      );
-    } else {
-      toast.error("Item already in this category");
-    }
-  };
-
-  const removeItemFromCategory = (categoryIndex, itemIndex) => {
-    const newCategories = [...categories];
-    const removedItem = newCategories[categoryIndex].items[itemIndex];
-    newCategories[categoryIndex].items.splice(itemIndex, 1);
-    setCategories(newCategories);
-
-    const foodItem = availableFoodItems.find(
-      (item) => item._id === removedItem,
-    );
-    if (foodItem) {
-      toast.success(`Removed "${foodItem.name}" from category`);
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (categories.length === 0) {
-      newErrors.categories = "At least one category is required";
-    }
-
-    categories.forEach((cat, index) => {
-      if (!cat.category.trim()) {
-        newErrors[`category_${index}`] = "Category name is required";
+      setIsSubmitting(true);
+      try {
+        await dispatch(createMenu(menuData)).unwrap();
+        toast.success("Menu created successfully!");
+        setNewCategoryName("");
+      } catch (error) {
+        toast.error(error || "Failed to create menu");
+      } finally {
+        setIsSubmitting(false);
       }
-    });
+    } else {
+      const existingCategories = categories.map((c) => c.category);
+      if (existingCategories.includes(newCategoryName.trim())) {
+        toast.error("Category already exists");
+        return;
+      }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+      setIsSubmitting(true);
+      try {
+        const updatedMenu = {
+          ...currentMenu,
+          menu: [
+            ...categories,
+            { category: newCategoryName.trim(), items: [] },
+          ],
+        };
+
+        await dispatch(createMenu(updatedMenu)).unwrap();
+        toast.success("Category added successfully!");
+        setNewCategoryName("");
+      } catch (error) {
+        toast.error(error || "Failed to add category");
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
   };
 
-  const handleSubmit = async () => {
-    if (!validateForm()) return;
+  const handleUpdateCategoryName = async (oldCategory, newCategory) => {
+    if (!newCategory.trim()) {
+      toast.error("Category name cannot be empty");
+      return;
+    }
+
+    if (oldCategory === newCategory.trim()) {
+      setEditingCategory(null);
+      return;
+    }
 
     setIsSubmitting(true);
-
-    const validCategories = categories
-      .filter((cat) => cat.category.trim() !== "")
-      .map((cat) => ({
-        category: cat.category.trim(),
-        items: cat.items,
-      }));
-
-    if (validCategories.length === 0) {
-      toast.error("Please add at least one valid category");
-      setIsSubmitting(false);
-      return;
-    }
-
-    const menuData = {
-      restaurant: id,
-      menu: validCategories,
-    };
-
     try {
-      let result;
-      if (existingMenu) {
-        result = await dispatch(
-          updateMenu({ menuId: existingMenu._id, menuData }),
-        ).unwrap();
-        toast.success("Menu updated successfully!");
-      } else {
-        result = await dispatch(createMenu(menuData)).unwrap();
-        toast.success("Menu created successfully!");
-      }
-
-      navigate(`/restaurant/${id}`);
+      await dispatch(
+        updateCategoryName({
+          menuId: currentMenu._id,
+          oldCategory,
+          newCategory: newCategory.trim(),
+        }),
+      ).unwrap();
+      toast.success("Category renamed successfully!");
+      setEditingCategory(null);
+      setEditingName("");
     } catch (error) {
-      toast.error(error || "Failed to save menu");
+      toast.error(error || "Failed to rename category");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleAddItemToCategory = async (categoryName, foodItemId) => {
+    if (!foodItemId) return;
+
+    setIsSubmitting(true);
+    try {
+      await dispatch(
+        addItemsToMenu({
+          menuId: currentMenu._id,
+          category: categoryName,
+          foodItemId,
+        }),
+      ).unwrap();
+      toast.success("Item added to category!");
+    } catch (error) {
+      toast.error(error || "Failed to add item");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRemoveItemFromCategory = async (
+    categoryName,
+    foodItemId,
+    itemName,
+  ) => {
+    if (window.confirm(`Remove "${itemName}" from this category?`)) {
+      setIsSubmitting(true);
+      try {
+        await dispatch(
+          removeItemsFromMenu({
+            menuId: currentMenu._id,
+            category: categoryName,
+            foodItemId,
+          }),
+        ).unwrap();
+        toast.success("Item removed from category!");
+      } catch (error) {
+        toast.error(error || "Failed to remove item");
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  const getItemsInCategory = (categoryName) => {
+    const category = categories.find((c) => c.category === categoryName);
+    if (!category || !category.items) return [];
+    return category.items;
+  };
+
+  const getFoodItemDetails = (itemId) => {
+    return foodItems.find((item) => item._id === itemId);
   };
 
   if (restaurantLoading || foodLoading || menuLoading) {
@@ -210,7 +219,7 @@ const CreateMenuPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto max-w-5xl px-4">
+      <div className="container mx-auto max-w-6xl px-4">
         <div className="mb-6">
           <Link
             to={`/restaurant/${id}`}
@@ -224,7 +233,7 @@ const CreateMenuPage = () => {
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <div className="bg-gradient-to-r from-orange-600 to-orange-500 px-6 py-5">
             <h1 className="text-2xl font-bold text-white">
-              {existingMenu ? "Edit Menu" : "Create Menu"}
+              {currentMenu ? "Manage Menu" : "Create Menu"}
             </h1>
             <p className="text-orange-100 mt-1">
               {restaurant.name} - Organize your food items into categories
@@ -237,7 +246,7 @@ const CreateMenuPage = () => {
                 Available Food Items
               </h2>
               <div className="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">
-                {availableFoodItems.length === 0 ? (
+                {foodItems.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-gray-500">No food items available</p>
                     <Link
@@ -249,7 +258,7 @@ const CreateMenuPage = () => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {availableFoodItems.map((item) => (
+                    {foodItems.map((item) => (
                       <div
                         key={item._id}
                         className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
@@ -284,200 +293,210 @@ const CreateMenuPage = () => {
               </div>
             </div>
 
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  Menu Categories
-                </h2>
+            <div className="mb-8 p-4 bg-orange-50 rounded-lg border border-orange-200">
+              <h3 className="font-medium text-gray-900 mb-3">
+                Add New Category
+              </h3>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="e.g., Appetizers, Main Course, Desserts"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500"
+                  onKeyPress={(e) => e.key === "Enter" && handleAddCategory()}
+                />
                 <button
-                  onClick={addCategory}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
+                  onClick={handleAddCategory}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
-                  <PlusIcon className="w-4 h-4" />
+                  <PlusIcon className="w-5 h-5" />
                   Add Category
                 </button>
               </div>
+            </div>
 
-              {errors.categories && (
-                <p className="text-red-500 text-sm mb-4">{errors.categories}</p>
-              )}
-
+            {categories.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                <p className="text-gray-500">No categories yet</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Add your first category using the form above
+                </p>
+              </div>
+            ) : (
               <div className="space-y-6">
-                {categories.map((category, catIndex) => (
-                  <div
-                    key={catIndex}
-                    className="border border-gray-200 rounded-lg p-4 bg-gray-50"
-                  >
-                    <div className="flex justify-between items-center mb-3">
-                      <div className="flex-1">
-                        {category.isEditing ? (
-                          <input
-                            type="text"
-                            value={category.category}
-                            onChange={(e) =>
-                              updateCategoryName(catIndex, e.target.value)
-                            }
-                            placeholder="Enter category name (e.g., Appetizers, Main Course, Desserts)"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500"
-                            autoFocus
-                          />
-                        ) : (
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {category.category || "Unnamed Category"}
-                          </h3>
-                        )}
-                        {errors[`category_${catIndex}`] && (
-                          <p className="text-red-500 text-xs mt-1">
-                            {errors[`category_${catIndex}`]}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 ml-3">
-                        <button
-                          onClick={() => toggleCategoryEdit(catIndex)}
-                          className="p-1 text-gray-500 hover:text-orange-600 transition-colors"
-                          title="Edit Category Name"
-                        >
-                          {category.isEditing ? (
-                            <ChevronDownIcon className="w-5 h-5" />
-                          ) : (
-                            <PlusIcon className="w-5 h-5 rotate-45" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => removeCategory(catIndex)}
-                          className="p-1 text-gray-500 hover:text-red-600 transition-colors"
-                          title="Remove Category"
-                        >
-                          <TrashIcon className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
+                {categories.map((category, catIndex) => {
+                  const categoryItems = getItemsInCategory(category.category);
+                  const availableItems = foodItems.filter(
+                    (item) => !categoryItems.includes(item._id),
+                  );
 
-                    <div className="mb-3">
-                      <select
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            addItemToCategory(catIndex, e.target.value);
-                            e.target.value = "";
-                          }
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500 text-sm"
-                        disabled={availableFoodItems.length === 0}
-                      >
-                        <option value="">+ Add item to this category</option>
-                        {availableFoodItems
-                          .filter((item) => !category.items.includes(item._id))
-                          .map((item) => (
+                  return (
+                    <div
+                      key={catIndex}
+                      className="border border-gray-200 rounded-lg overflow-hidden"
+                    >
+                      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                        {editingCategory === category.category ? (
+                          <div className="flex items-center gap-2 flex-1">
+                            <input
+                              type="text"
+                              value={editingName}
+                              onChange={(e) => setEditingName(e.target.value)}
+                              className="flex-1 px-3 py-1 border border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500"
+                              autoFocus
+                              onKeyPress={(e) =>
+                                e.key === "Enter" &&
+                                handleUpdateCategoryName(
+                                  category.category,
+                                  editingName,
+                                )
+                              }
+                            />
+                            <button
+                              onClick={() =>
+                                handleUpdateCategoryName(
+                                  category.category,
+                                  editingName,
+                                )
+                              }
+                              className="p-1 text-green-600 hover:text-green-700"
+                            >
+                              <CheckIcon className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingCategory(null);
+                                setEditingName("");
+                              }}
+                              className="p-1 text-red-600 hover:text-red-700"
+                            >
+                              <XMarkIcon className="w-5 h-5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {category.category}
+                            </h3>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setEditingCategory(category.category);
+                                  setEditingName(category.category);
+                                }}
+                                className="p-1 text-gray-500 hover:text-orange-600 transition-colors"
+                                title="Edit Category"
+                              >
+                                <PencilIcon className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      <div className="p-4 border-b border-gray-100">
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              handleAddItemToCategory(
+                                category.category,
+                                e.target.value,
+                              );
+                              e.target.value = "";
+                            }
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500 text-sm"
+                          disabled={availableItems.length === 0 || !currentMenu}
+                        >
+                          <option value="">+ Add item to this category</option>
+                          {availableItems.map((item) => (
                             <option key={item._id} value={item._id}>
                               {item.name} - ${item.price}
                             </option>
                           ))}
-                        {availableFoodItems.filter(
-                          (item) => !category.items.includes(item._id),
-                        ).length === 0 && (
-                          <option disabled>All items added</option>
-                        )}
-                      </select>
-                    </div>
-
-                    {category.items.length > 0 ? (
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-gray-700">
-                          Items in this category:
-                        </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {category.items.map((itemId, itemIndex) => {
-                            const foodItem = availableFoodItems.find(
-                              (item) => item._id === itemId,
-                            );
-                            return (
-                              <div
-                                key={itemIndex}
-                                className="flex items-center justify-between bg-white rounded-lg p-2 border border-gray-200"
-                              >
-                                <div className="flex items-center gap-2">
-                                  {foodItem?.images && foodItem.images[0] ? (
-                                    <img
-                                      src={foodItem.images[0].url}
-                                      alt={foodItem.name}
-                                      className="w-8 h-8 object-cover rounded"
-                                    />
-                                  ) : (
-                                    <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-                                      <span className="text-gray-400 text-xs">
-                                        No img
-                                      </span>
-                                    </div>
-                                  )}
-                                  <div>
-                                    <p className="text-sm font-medium text-gray-900">
-                                      {foodItem?.name || "Unknown Item"}
-                                    </p>
-                                    <p className="text-xs text-gray-500">
-                                      ${foodItem?.price || "0"}
-                                    </p>
-                                  </div>
-                                </div>
-                                <button
-                                  onClick={() =>
-                                    removeItemFromCategory(catIndex, itemIndex)
-                                  }
-                                  className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                                  title="Remove from category"
-                                >
-                                  <XMarkIcon className="w-4 h-4" />
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
+                          {availableItems.length === 0 && (
+                            <option disabled>All items added</option>
+                          )}
+                        </select>
                       </div>
-                    ) : (
-                      <p className="text-sm text-gray-400 italic">
-                        No items added to this category yet
-                      </p>
-                    )}
-                  </div>
-                ))}
 
-                {categories.length === 0 && (
-                  <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                    <p className="text-gray-500">No categories yet</p>
-                    <button
-                      onClick={addCategory}
-                      className="mt-2 text-orange-600 hover:text-orange-700"
-                    >
-                      Add your first category
-                    </button>
-                  </div>
-                )}
+                      <div className="p-4">
+                        {categoryItems.length > 0 ? (
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-gray-700">
+                              Items ({categoryItems.length}):
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {categoryItems.map((itemId, itemIndex) => {
+                                const foodItem = getFoodItemDetails(itemId);
+                                return (
+                                  <div
+                                    key={itemIndex}
+                                    className="flex items-center justify-between bg-white rounded-lg p-2 border border-gray-200"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      {foodItem?.images &&
+                                      foodItem.images[0] ? (
+                                        <img
+                                          src={foodItem.images[0].url}
+                                          alt={foodItem.name}
+                                          className="w-8 h-8 object-cover rounded"
+                                        />
+                                      ) : (
+                                        <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                                          <span className="text-gray-400 text-xs">
+                                            No img
+                                          </span>
+                                        </div>
+                                      )}
+                                      <div>
+                                        <p className="text-sm font-medium text-gray-900">
+                                          {foodItem?.name || "Unknown Item"}
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                          ${foodItem?.price || "0"}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={() =>
+                                        handleRemoveItemFromCategory(
+                                          category.category,
+                                          itemId,
+                                          foodItem?.name,
+                                        )
+                                      }
+                                      className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                                      title="Remove from category"
+                                    >
+                                      <XMarkIcon className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-400 italic text-center py-4">
+                            No items added to this category yet
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
+            )}
 
-            <div className="mt-8 pt-6 border-t border-gray-200 flex justify-end gap-3">
+            <div className="mt-8 pt-6 border-t border-gray-200 flex justify-end">
               <Link
                 to={`/restaurant/${id}`}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
               >
-                Cancel
+                Back to Restaurant
               </Link>
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Saving...
-                  </>
-                ) : existingMenu ? (
-                  "Update Menu"
-                ) : (
-                  "Create Menu"
-                )}
-              </button>
             </div>
           </div>
         </div>
