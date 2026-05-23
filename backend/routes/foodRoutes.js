@@ -28,6 +28,7 @@ router.put(
   "/:id",
   protect,
   authorizeRoles("admin", "restaurant_owner"),
+  uploadMultiple.array("images", 5),
   foodControllers.updateFoodItem,
 );
 
@@ -36,6 +37,20 @@ router.delete(
   protect,
   authorizeRoles("admin", "restaurant_owner"),
   foodControllers.deleteFoodItem,
+);
+
+router.delete(
+  "/:id/images/:imageId",
+  protect,
+  authorizeRoles("admin", "restaurant_owner"),
+  foodControllers.deleteFoodImage,
+);
+
+router.patch(
+  "/:id/images/:imageId/primary",
+  protect,
+  authorizeRoles("admin", "restaurant_owner"),
+  foodControllers.setPrimaryImage,
 );
 
 router.post(
