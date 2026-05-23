@@ -1,10 +1,9 @@
-// controllers/foodController.js
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const AppError = require("../utils/errorHandler");
 const FoodItem = require("../models/foodItem");
 const Menu = require("../models/menu");
+const { cloudinary, uploadToCloudinary } = require("../config/cloudinary");
 
-// Helper function to generate slug
 const generateSlug = (name, restaurantId) => {
   const baseSlug = name
     .toLowerCase()
@@ -16,7 +15,6 @@ const generateSlug = (name, restaurantId) => {
   return `${baseSlug}-${restaurantIdShort}`;
 };
 
-// Helper function to validate discount dates
 const validateDiscountDates = (discount, startDate, endDate) => {
   if (discount > 0) {
     if (!startDate || !endDate) {
@@ -31,7 +29,6 @@ const validateDiscountDates = (discount, startDate, endDate) => {
   return true;
 };
 
-// Get all food items
 exports.getAllFoodItems = catchAsyncErrors(async (req, res, next) => {
   const { restaurantId, isAvailable, minPrice, maxPrice, isPopular, isNew } =
     req.query;
@@ -73,7 +70,6 @@ exports.getAllFoodItems = catchAsyncErrors(async (req, res, next) => {
   });
 });
 
-// Get food item by ID
 exports.getFoodItemById = catchAsyncErrors(async (req, res, next) => {
   const foodItem = await FoodItem.findById(req.params.id)
     .populate("restaurant", "name address phone")
@@ -90,16 +86,13 @@ exports.getFoodItemById = catchAsyncErrors(async (req, res, next) => {
   });
 });
 
-// Create food item
 exports.createFoodItem = catchAsyncErrors(async (req, res, next) => {
-  // Check authentication
   if (!req.user || !req.user.id) {
     return next(
       new AppError("You must be logged in to create a food item", 401),
     );
   }
 
-  // Validate required fields
   if (!req.body.restaurant) {
     return next(new AppError("Restaurant ID is required", 400));
   }
@@ -112,7 +105,6 @@ exports.createFoodItem = catchAsyncErrors(async (req, res, next) => {
     return next(new AppError("Valid price is required", 400));
   }
 
-  // Validate discount dates
   try {
     validateDiscountDates(
       req.body.discount,
@@ -154,19 +146,32 @@ exports.createFoodItem = catchAsyncErrors(async (req, res, next) => {
   req.body.slug = slug;
   req.body.createdBy = req.user.id;
 
-  // Handle images
   if (req.files && req.files.length > 0) {
-    const images = req.files.map((file, index) => ({
-      url: file.path || file.location,
-      isPrimary: index === 0,
-      caption: req.body.caption || "",
-      uploadedAt: new Date(),
-    }));
+    const images = [];
+    for (let i = 0; i < req.files.length; i++) {
+      const file = req.files[i];
+      try {
+        const result = await uploadToCloudinary(file.buffer, "food_items");
+        images.push({
+          url: result.secure_url,
+          public_id: result.public_id,
+          isPrimary: i === 0,
+          caption: req.body.caption || "",
+          uploadedAt: new Date(),
+        });
+      } catch (uploadError) {
+        console.error("Image upload error:", uploadError);
+      }
+    }
     req.body.images = images;
-  } else if (!req.body.images || req.body.images.length === 0) {
+  }
+
+  // If no images uploaded, set default placeholder
+  if (!req.body.images || req.body.images.length === 0) {
     req.body.images = [
       {
         url: "https://placehold.co/300x200/png?text=Food+Item",
+        public_id: null,
         isPrimary: true,
         caption: "No image available",
         uploadedAt: new Date(),
@@ -234,6 +239,26 @@ exports.updateFoodItem = catchAsyncErrors(async (req, res, next) => {
     req.body.slug = slug;
   }
 
+  if (req.files && req.files.length > 0) {
+    const newImages = [];
+    for (let i = 0; i < req.files.length; i++) {
+      const file = req.files[i];
+      try {
+        const result = await uploadToCloudinary(file.buffer, "food_items");
+        newImages.push({
+          url: result.secure_url,
+          public_id: result.public_id,
+          isPrimary: foodItem.images.length === 0 && i === 0,
+          caption: req.body.caption || "",
+          uploadedAt: new Date(),
+        });
+      } catch (uploadError) {
+        console.error("Image upload error:", uploadError);
+      }
+    }
+    req.body.images = [...foodItem.images, ...newImages];
+  }
+
   foodItem = await FoodItem.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,
@@ -253,12 +278,87 @@ exports.deleteFoodItem = catchAsyncErrors(async (req, res, next) => {
     return next(new AppError("Food item not found", 404));
   }
 
+  for (const image of foodItem.images) {
+    if (image.public_id) {
+      try {
+        await cloudinary.uploader.destroy(image.public_id);
+      } catch (err) {
+        console.error("Error deleting image from Cloudinary:", err);
+      }
+    }
+  }
+
   foodItem.isAvailable = false;
   await foodItem.save();
 
   res.status(200).json({
     success: true,
     message: "Food item deleted successfully",
+  });
+});
+
+exports.deleteFoodImage = catchAsyncErrors(async (req, res, next) => {
+  const { id, imageId } = req.params;
+
+  const foodItem = await FoodItem.findById(id);
+
+  if (!foodItem) {
+    return next(new AppError("Food item not found", 404));
+  }
+
+  const image = foodItem.images.id(imageId);
+  if (!image) {
+    return next(new AppError("Image not found", 404));
+  }
+
+  if (image.public_id) {
+    try {
+      await cloudinary.uploader.destroy(image.public_id);
+    } catch (err) {
+      console.error("Error deleting image from Cloudinary:", err);
+    }
+  }
+
+  image.remove();
+
+  if (image.isPrimary && foodItem.images.length > 0) {
+    foodItem.images[0].isPrimary = true;
+  }
+
+  await foodItem.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Image deleted successfully",
+    data: foodItem,
+  });
+});
+
+exports.setPrimaryImage = catchAsyncErrors(async (req, res, next) => {
+  const { id, imageId } = req.params;
+
+  const foodItem = await FoodItem.findById(id);
+
+  if (!foodItem) {
+    return next(new AppError("Food item not found", 404));
+  }
+
+  foodItem.images.forEach((img) => {
+    img.isPrimary = false;
+  });
+
+  const image = foodItem.images.id(imageId);
+  if (!image) {
+    return next(new AppError("Image not found", 404));
+  }
+
+  image.isPrimary = true;
+  await foodItem.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Primary image updated",
+    data: foodItem,
   });
 });
 
