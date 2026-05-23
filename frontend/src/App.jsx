@@ -30,6 +30,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import ProtectedRoute from "./shared/components/ProtectedRoute";
 import ForgotPassword from "./pages/user/ForgotPassword";
 import ResetPassword from "./pages/user/ResetPassword";
+import CreateMenuPage from "./pages/restaurant/CreateMenuPage";
 
 function App() {
   const dispatch = useDispatch();
@@ -113,6 +114,14 @@ function App() {
             <Route path="/restaurant/search/:keyword" element={<Home />} />
             <Route path="/restaurants" element={<Home />} />
             <Route path="/restaurant/:id" element={<RestaurantMenuPage />} />
+            <Route
+              path="/restaurant/:id/create-menu"
+              element={
+                <ProtectedRoute allowedRoles={["restaurant_owner", "admin"]}>
+                  <CreateMenuPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/sign-up" element={<SignUp />} />
             <Route path="/sign-in" element={<SignIn />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />

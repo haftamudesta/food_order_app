@@ -14,6 +14,7 @@ import {
   HeartIcon,
   XMarkIcon,
   CurrencyDollarIcon,
+  PlusIcon,
 } from "@heroicons/react/24/solid";
 import { HeartIcon as HeartOutlineIcon } from "@heroicons/react/24/outline";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
@@ -167,6 +168,10 @@ const RestaurantMenuPage = () => {
     setActiveTab(tab);
     setSelectedCategory("");
     setPriceRange({ min: "", max: "" });
+  };
+
+  const handleCreateMenu = () => {
+    navigate(`/restaurant/${id}/create-menu`);
   };
 
   const hasActiveFilters =
@@ -425,7 +430,6 @@ const RestaurantMenuPage = () => {
           </div>
 
           <div className="lg:col-span-3">
-            {/* Mobile Filter Toggle */}
             <div className="lg:hidden mb-4">
               <button
                 onClick={() => setShowFilters(!showFilters)}
@@ -595,6 +599,16 @@ const RestaurantMenuPage = () => {
                   </select>
                 </div>
               </div>
+            </div>
+
+            <div className="mb-6 flex justify-end">
+              <button
+                onClick={handleCreateMenu}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors shadow-sm"
+              >
+                <PlusIcon className="w-5 h-5" />
+                Create Menu
+              </button>
             </div>
 
             <div className="mb-4 text-sm text-gray-600">
