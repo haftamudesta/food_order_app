@@ -1,35 +1,57 @@
+// controllers/foodController.js
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const AppError = require("../utils/errorHandler");
 const FoodItem = require("../models/foodItem");
 const Menu = require("../models/menu");
 
+// Helper function to generate slug
+const generateSlug = (name, restaurantId) => {
+  const baseSlug = name
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "")
+    .replace(/\s+/g, "-")
+    .substring(0, 60);
+
+  const restaurantIdShort = restaurantId.toString().slice(-6);
+  return `${baseSlug}-${restaurantIdShort}`;
+};
+
+// Helper function to validate discount dates
+const validateDiscountDates = (discount, startDate, endDate) => {
+  if (discount > 0) {
+    if (!startDate || !endDate) {
+      throw new Error(
+        "Discount start and end dates are required when discount is applied",
+      );
+    }
+    if (new Date(startDate) >= new Date(endDate)) {
+      throw new Error("Discount start date must be before end date");
+    }
+  }
+  return true;
+};
+
+// Get all food items
 exports.getAllFoodItems = catchAsyncErrors(async (req, res, next) => {
-  const {
-    restaurantId,
-    isAvailable,
-    category,
-    minPrice,
-    maxPrice,
-    isPopular,
-    isNew,
-  } = req.query;
+  const { restaurantId, isAvailable, minPrice, maxPrice, isPopular, isNew } =
+    req.query;
 
   const filter = {};
 
   if (restaurantId) filter.restaurant = restaurantId;
   if (isAvailable !== undefined) filter.isAvailable = isAvailable === "true";
   if (isPopular !== undefined) filter.isPopular = isPopular === "true";
-  if (isNew !== undefined) filter.isNew = isNew === "true";
+  if (isNew !== undefined) filter.isNewOne = isNew === "true";
 
   if (minPrice || maxPrice) {
     filter.price = {};
     if (minPrice) filter.price.$gte = parseFloat(minPrice);
     if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
   }
+
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
   const skip = (page - 1) * limit;
-
   const sortBy = req.query.sortBy || "-createdAt";
 
   const foodItems = await FoodItem.find(filter)
@@ -40,6 +62,7 @@ exports.getAllFoodItems = catchAsyncErrors(async (req, res, next) => {
     .limit(limit);
 
   const total = await FoodItem.countDocuments(filter);
+
   res.status(200).json({
     success: true,
     count: foodItems.length,
@@ -50,6 +73,7 @@ exports.getAllFoodItems = catchAsyncErrors(async (req, res, next) => {
   });
 });
 
+// Get food item by ID
 exports.getFoodItemById = catchAsyncErrors(async (req, res, next) => {
   const foodItem = await FoodItem.findById(req.params.id)
     .populate("restaurant", "name address phone")
@@ -66,15 +90,40 @@ exports.getFoodItemById = catchAsyncErrors(async (req, res, next) => {
   });
 });
 
+// Create food item
 exports.createFoodItem = catchAsyncErrors(async (req, res, next) => {
+  // Check authentication
   if (!req.user || !req.user.id) {
     return next(
       new AppError("You must be logged in to create a food item", 401),
     );
   }
 
-  req.body.createdBy = req.user.id;
+  // Validate required fields
+  if (!req.body.restaurant) {
+    return next(new AppError("Restaurant ID is required", 400));
+  }
 
+  if (!req.body.name) {
+    return next(new AppError("Food item name is required", 400));
+  }
+
+  if (!req.body.price || req.body.price <= 0) {
+    return next(new AppError("Valid price is required", 400));
+  }
+
+  // Validate discount dates
+  try {
+    validateDiscountDates(
+      req.body.discount,
+      req.body.discountStartDate,
+      req.body.discountEndDate,
+    );
+  } catch (error) {
+    return next(new AppError(error.message, 400));
+  }
+
+  // Check for duplicate name
   const existingItem = await FoodItem.findOne({
     restaurant: req.body.restaurant,
     name: { $regex: new RegExp(`^${req.body.name}$`, "i") },
@@ -89,20 +138,38 @@ exports.createFoodItem = catchAsyncErrors(async (req, res, next) => {
     );
   }
 
-  if (req.body.images && req.body.images.length > 0) {
-  } else if (req.files && req.files.length > 0) {
+  // Generate slug
+  let slug = generateSlug(req.body.name, req.body.restaurant);
+
+  // Check for duplicate slug
+  const existingSlug = await FoodItem.findOne({
+    restaurant: req.body.restaurant,
+    slug: slug,
+  });
+
+  if (existingSlug) {
+    slug = `${slug}-${Date.now().toString().slice(-4)}`;
+  }
+
+  req.body.slug = slug;
+  req.body.createdBy = req.user.id;
+
+  // Handle images
+  if (req.files && req.files.length > 0) {
     const images = req.files.map((file, index) => ({
       url: file.path || file.location,
       isPrimary: index === 0,
       caption: req.body.caption || "",
+      uploadedAt: new Date(),
     }));
     req.body.images = images;
-  } else {
+  } else if (!req.body.images || req.body.images.length === 0) {
     req.body.images = [
       {
-        url: "https://via.placeholder.com/300x200?text=Food+Item",
+        url: "https://placehold.co/300x200/png?text=Food+Item",
         isPrimary: true,
         caption: "No image available",
+        uploadedAt: new Date(),
       },
     ];
   }
@@ -125,12 +192,25 @@ exports.updateFoodItem = catchAsyncErrors(async (req, res, next) => {
     return next(new AppError("Food item not found", 404));
   }
 
+  if (req.body.discount !== undefined) {
+    try {
+      validateDiscountDates(
+        req.body.discount,
+        req.body.discountStartDate || foodItem.discountStartDate,
+        req.body.discountEndDate || foodItem.discountEndDate,
+      );
+    } catch (error) {
+      return next(new AppError(error.message, 400));
+    }
+  }
+
   if (req.body.name && req.body.name !== foodItem.name) {
     const existingItem = await FoodItem.findOne({
       restaurant: foodItem.restaurant,
       name: { $regex: new RegExp(`^${req.body.name}$`, "i") },
       _id: { $ne: req.params.id },
     });
+
     if (existingItem) {
       return next(
         new AppError(
@@ -139,12 +219,26 @@ exports.updateFoodItem = catchAsyncErrors(async (req, res, next) => {
         ),
       );
     }
+
+    let slug = generateSlug(req.body.name, foodItem.restaurant);
+    const existingSlug = await FoodItem.findOne({
+      restaurant: foodItem.restaurant,
+      slug: slug,
+      _id: { $ne: req.params.id },
+    });
+
+    if (existingSlug) {
+      slug = `${slug}-${Date.now().toString().slice(-4)}`;
+    }
+
+    req.body.slug = slug;
   }
 
   foodItem = await FoodItem.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,
   });
+
   res.status(200).json({
     success: true,
     message: "Food item updated successfully",
@@ -159,7 +253,6 @@ exports.deleteFoodItem = catchAsyncErrors(async (req, res, next) => {
     return next(new AppError("Food item not found", 404));
   }
 
-  // Option 1: Soft delete (recommended)
   foodItem.isAvailable = false;
   await foodItem.save();
 
@@ -239,6 +332,7 @@ exports.getItemsByCategory = catchAsyncErrors(async (req, res, next) => {
     _id: { $in: categoryData.items },
     isAvailable: true,
   });
+
   res.status(200).json({
     success: true,
     category,
