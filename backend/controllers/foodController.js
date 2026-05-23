@@ -67,6 +67,12 @@ exports.getFoodItemById = catchAsyncErrors(async (req, res, next) => {
 });
 
 exports.createFoodItem = catchAsyncErrors(async (req, res, next) => {
+  if (!req.user || !req.user.id) {
+    return next(
+      new AppError("You must be logged in to create a food item", 401),
+    );
+  }
+
   req.body.createdBy = req.user.id;
 
   const existingItem = await FoodItem.findOne({
@@ -82,6 +88,25 @@ exports.createFoodItem = catchAsyncErrors(async (req, res, next) => {
       ),
     );
   }
+
+  if (req.body.images && req.body.images.length > 0) {
+  } else if (req.files && req.files.length > 0) {
+    const images = req.files.map((file, index) => ({
+      url: file.path || file.location,
+      isPrimary: index === 0,
+      caption: req.body.caption || "",
+    }));
+    req.body.images = images;
+  } else {
+    req.body.images = [
+      {
+        url: "https://via.placeholder.com/300x200?text=Food+Item",
+        isPrimary: true,
+        caption: "No image available",
+      },
+    ];
+  }
+
   const foodItem = await FoodItem.create(req.body);
 
   res.status(201).json({
@@ -100,7 +125,6 @@ exports.updateFoodItem = catchAsyncErrors(async (req, res, next) => {
     return next(new AppError("Food item not found", 404));
   }
 
-  // Check if updating name and if it already exists
   if (req.body.name && req.body.name !== foodItem.name) {
     const existingItem = await FoodItem.findOne({
       restaurant: foodItem.restaurant,
