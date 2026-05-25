@@ -1,26 +1,52 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const restaurantController = require('../controllers/restaurantController');
-const { protect } = require('../middleware/Protect');
+const restaurantController = require("../controllers/restaurantController");
+const { protect } = require("../middleware/Protect");
+const { uploadMultiple } = require("../config/cloudinary");
 
-// IMPORTANT: Specific routes MUST come before parameter routes (/:id)
+router.get("/search", restaurantController.searchRestaurants);
+router.get("/featured", restaurantController.getFeaturedRestaurants);
+router.get("/", restaurantController.getAllRestaurants);
 
-// Public routes - specific paths first
-router.get('/search', restaurantController.searchRestaurants);
-router.get('/featured', restaurantController.getFeaturedRestaurants);
-router.get('/my-restaurants', protect, restaurantController.getMyRestaurants);
-router.get('/', restaurantController.getAllRestaurants);
+router.get("/my-restaurants", protect, restaurantController.getMyRestaurants);
 
-// Parameter routes (with :id) - these should come AFTER specific routes
-router.get('/:id', restaurantController.getRestaurant);
-router.get('/:id/hours', restaurantController.getOperatingHours);
-router.get('/:id/is-open', restaurantController.checkIsOpen);
-router.get('/:id/stats', restaurantController.getRestaurantStats);
+router.post(
+  "/",
+  protect,
+  uploadMultiple.array("images", 10),
+  restaurantController.createRestaurant,
+);
 
-// Mutation routes
-router.post('/', protect, restaurantController.createRestaurant);
-router.patch('/:id', protect, restaurantController.updateRestaurant);
-router.delete('/:id', protect, restaurantController.deleteRestaurant);
-router.patch('/:id/toggle-status', protect, restaurantController.toggleRestaurantStatus);
+router.patch(
+  "/:id",
+  protect,
+  uploadMultiple.array("images", 10),
+  restaurantController.updateRestaurant,
+);
+
+router.delete("/:id", protect, restaurantController.deleteRestaurant);
+
+router.patch(
+  "/:id/toggle-status",
+  protect,
+  restaurantController.toggleRestaurantStatus,
+);
+
+router.delete(
+  "/:id/images/:imageId",
+  protect,
+  restaurantController.deleteRestaurantImage,
+);
+
+router.patch(
+  "/:id/images/:imageId/primary",
+  protect,
+  restaurantController.setPrimaryImage,
+);
+
+router.get("/:id", restaurantController.getRestaurant);
+router.get("/:id/hours", restaurantController.getOperatingHours);
+router.get("/:id/is-open", restaurantController.checkIsOpen);
+router.get("/:id/stats", restaurantController.getRestaurantStats);
 
 module.exports = router;
