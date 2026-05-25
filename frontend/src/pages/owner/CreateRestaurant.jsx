@@ -3,7 +3,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { createRestaurant } from "../../redux/actions/restaurantAction";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import { BuildingStorefrontIcon } from "@heroicons/react/24/outline";
+import {
+  BuildingStorefrontIcon,
+  PhotoIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
+import toast from "react-hot-toast";
 
 const CreateRestaurant = () => {
   const dispatch = useDispatch();
@@ -44,6 +49,10 @@ const CreateRestaurant = () => {
   const [cuisineInput, setCuisineInput] = useState("");
   const [errors, setErrors] = useState({});
 
+  const [images, setImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (name.includes(".")) {
@@ -80,6 +89,42 @@ const CreateRestaurant = () => {
     }));
   };
 
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+
+    if (images.length + files.length > 10) {
+      toast.error("Maximum 10 images allowed");
+      return;
+    }
+
+    files.forEach((file) => {
+      if (!file.type.startsWith("image/")) {
+        toast.error(`${file.name} is not an image file`);
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`${file.name} exceeds 5MB limit`);
+        return;
+      }
+    });
+
+    setImages([...images, ...files]);
+
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreviews((prev) => [...prev, reader.result]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index) => {
+    setImages(images.filter((_, i) => i !== index));
+    setImagePreviews(imagePreviews.filter((_, i) => i !== index));
+  };
+
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name) newErrors.name = "Restaurant name is required";
@@ -89,6 +134,8 @@ const CreateRestaurant = () => {
     if (!formData.contact.phone) newErrors.phone = "Phone number is required";
     if (formData.cuisine.length === 0)
       newErrors.cuisine = "At least one cuisine is required";
+    if (images.length === 0)
+      newErrors.images = "At least one image is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -98,15 +145,39 @@ const CreateRestaurant = () => {
     e.preventDefault();
     if (!validateForm()) return;
 
+    const formDataToSend = new FormData();
+
+    formDataToSend.append("name", formData.name);
+    formDataToSend.append("description", formData.description);
+    formDataToSend.append("cuisine", JSON.stringify(formData.cuisine));
+    formDataToSend.append("address", JSON.stringify(formData.address));
+    formDataToSend.append("contact", JSON.stringify(formData.contact));
+    formDataToSend.append(
+      "operatingHours",
+      JSON.stringify(formData.operatingHours),
+    );
+    formDataToSend.append("pricing", JSON.stringify(formData.pricing));
+    formDataToSend.append("isVeg", formData.isVeg);
+
+    images.forEach((image) => {
+      formDataToSend.append("images", image);
+    });
+
+    setUploadingImages(true);
+
     try {
-      await dispatch(createRestaurant(formData)).unwrap();
+      await dispatch(createRestaurant(formDataToSend)).unwrap();
+      toast.success("Restaurant created successfully!");
       navigate("/owner/dashboard");
     } catch (error) {
       console.error("Failed to create restaurant:", error);
+      toast.error(error || "Failed to create restaurant");
+    } finally {
+      setUploadingImages(false);
     }
   };
 
-  if (loading) {
+  if (loading || uploadingImages) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="large" />
@@ -128,6 +199,53 @@ const CreateRestaurant = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                Restaurant Images *
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                {imagePreviews.map((preview, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={preview}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <XMarkIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                {imagePreviews.length < 10 && (
+                  <label className="border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center h-32 cursor-pointer hover:border-orange-500 transition-colors">
+                    <PhotoIcon className="w-8 h-8 text-gray-400" />
+                    <span className="text-sm text-gray-500 mt-1">
+                      Add Image
+                    </span>
+                    <span className="text-xs text-gray-400">Max 5MB</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+              {errors.images && (
+                <p className="text-red-500 text-xs mt-1">{errors.images}</p>
+              )}
+              <p className="text-xs text-gray-400 mt-2">
+                Upload up to 10 images. First image will be the cover. Supported
+                formats: JPG, PNG, GIF, WEBP
+              </p>
+            </div>
+
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 Basic Information
@@ -239,6 +357,9 @@ const CreateRestaurant = () => {
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   />
+                  {errors.street && (
+                    <p className="text-red-500 text-xs mt-1">{errors.street}</p>
+                  )}
                 </div>
                 <input
                   type="text"
@@ -248,6 +369,9 @@ const CreateRestaurant = () => {
                   onChange={handleChange}
                   className="px-3 py-2 border border-gray-300 rounded-lg"
                 />
+                {errors.city && (
+                  <p className="text-red-500 text-xs mt-1">{errors.city}</p>
+                )}
                 <input
                   type="text"
                   name="address.state"
@@ -288,6 +412,9 @@ const CreateRestaurant = () => {
                   onChange={handleChange}
                   className="px-3 py-2 border border-gray-300 rounded-lg"
                 />
+                {errors.phone && (
+                  <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+                )}
                 <input
                   type="email"
                   name="contact.email"
@@ -325,6 +452,15 @@ const CreateRestaurant = () => {
               </div>
             </div>
 
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                Operating Hours (Optional)
+              </h2>
+              <p className="text-sm text-gray-500 mb-2">
+                You can add operating hours later from the restaurant dashboard
+              </p>
+            </div>
+
             <div className="flex justify-end gap-3 pt-4 border-t">
               <button
                 type="button"
@@ -335,10 +471,14 @@ const CreateRestaurant = () => {
               </button>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || uploadingImages}
                 className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50"
               >
-                {loading ? "Creating..." : "Create Restaurant"}
+                {uploadingImages
+                  ? "Uploading Images..."
+                  : loading
+                    ? "Creating..."
+                    : "Create Restaurant"}
               </button>
             </div>
           </form>
