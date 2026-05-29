@@ -110,6 +110,17 @@ const foodItemSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+
+    aiGenerated: {
+      tags: [String],
+      allergens: [String],
+      serves: String,
+      bestFor: [String],
+      generatedAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
   },
   {
     timestamps: true,

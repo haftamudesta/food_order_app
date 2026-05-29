@@ -17,6 +17,13 @@ router.get(
 );
 router.get("/menu/:menuId", foodControllers.getMenuItems);
 
+// ==================== AI ROUTE ====================
+router.post(
+  "/generate-description",
+  protect,
+  foodControllers.generateAIDescription,
+);
+
 router.post(
   "/",
   protect,

@@ -3,6 +3,7 @@ const AppError = require("../utils/errorHandler");
 const FoodItem = require("../models/foodItem");
 const Menu = require("../models/menu");
 const { cloudinary, uploadToCloudinary } = require("../config/cloudinary");
+const { generateDishDescription } = require("../services/aiService");
 
 const generateSlug = (name, restaurantId) => {
   const baseSlug = name
@@ -86,6 +87,31 @@ exports.getFoodItemById = catchAsyncErrors(async (req, res, next) => {
   });
 });
 
+exports.generateAIDescription = catchAsyncErrors(async (req, res, next) => {
+  const { name, category, spiceLevel, price } = req.body;
+
+  if (!name) {
+    return next(new AppError("Dish name is required", 400));
+  }
+
+  try {
+    const aiResponse = await generateDishDescription({
+      name,
+      category,
+      spiceLevel,
+      price,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: aiResponse,
+    });
+  } catch (error) {
+    console.error("AI generation error:", error);
+    return next(new AppError("Failed to generate description", 500));
+  }
+});
+
 exports.createFoodItem = catchAsyncErrors(async (req, res, next) => {
   if (!req.user || !req.user.id) {
     return next(
@@ -105,6 +131,27 @@ exports.createFoodItem = catchAsyncErrors(async (req, res, next) => {
     return next(new AppError("Valid price is required", 400));
   }
 
+  if (req.body.autoGenerate === "true" && !req.body.description) {
+    try {
+      const aiResponse = await generateDishDescription({
+        name: req.body.name,
+        category: req.body.category,
+        spiceLevel: req.body.spiceLevel,
+        price: req.body.price,
+      });
+
+      req.body.description = aiResponse.description;
+      req.body.aiGenerated = {
+        tags: aiResponse.tags,
+        allergens: aiResponse.allergens,
+        serves: aiResponse.serves,
+        bestFor: aiResponse.bestFor,
+      };
+    } catch (error) {
+      console.error("AI generation failed:", error);
+    }
+  }
+
   try {
     validateDiscountDates(
       req.body.discount,
@@ -115,7 +162,6 @@ exports.createFoodItem = catchAsyncErrors(async (req, res, next) => {
     return next(new AppError(error.message, 400));
   }
 
-  // Check for duplicate name
   const existingItem = await FoodItem.findOne({
     restaurant: req.body.restaurant,
     name: { $regex: new RegExp(`^${req.body.name}$`, "i") },
@@ -130,10 +176,8 @@ exports.createFoodItem = catchAsyncErrors(async (req, res, next) => {
     );
   }
 
-  // Generate slug
   let slug = generateSlug(req.body.name, req.body.restaurant);
 
-  // Check for duplicate slug
   const existingSlug = await FoodItem.findOne({
     restaurant: req.body.restaurant,
     slug: slug,
@@ -166,7 +210,6 @@ exports.createFoodItem = catchAsyncErrors(async (req, res, next) => {
     req.body.images = images;
   }
 
-  // If no images uploaded, set default placeholder
   if (!req.body.images || req.body.images.length === 0) {
     req.body.images = [
       {
