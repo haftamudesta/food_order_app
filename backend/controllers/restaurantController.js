@@ -126,7 +126,7 @@ exports.getRestaurant = catchAsyncErrors(async (req, res, next) => {
       path: "user",
       select: "name",
     },
-    options: { limit: 5, sort: "-createdAt" },
+    options: { limit: 10, sort: "-createdAt" },
   });
 
   if (!restaurant || !restaurant.isActive) {
@@ -570,39 +570,45 @@ exports.getFeaturedRestaurants = catchAsyncErrors(async (req, res, next) => {
 });
 
 exports.getReviewAnalysis = catchAsyncErrors(async (req, res, next) => {
-  const restaurant = await Restaurant.findById(req.params.id).populate({
-    path: "reviews",
-    select: "comment rating createdAt",
-    populate: {
-      path: "user",
-      select: "name",
-    },
-    options: { limit: 50, sort: "-createdAt" },
-  });
+  const { id } = req.params;
+  const { page = 1, limit = 10 } = req.query;
 
+  const restaurant = await Restaurant.findById(id);
   if (!restaurant) {
     return next(new AppError("No restaurant found with that ID", 404));
   }
 
-  // Get reviews (only the comments)
-  const reviews = restaurant.reviews || [];
+  const allReviews = await Review.find({ restaurant: id })
+    .sort("-createdAt")
+    .limit(50)
+    .select("comment rating");
 
-  // Analyze with AI
-  const analysis = await analyzeReviewsWithAI(reviews);
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const paginatedReviews = await Review.find({ restaurant: id })
+    .populate("user", "name")
+    .sort("-createdAt")
+    .skip(skip)
+    .limit(parseInt(limit));
 
-  const totalReviews = reviews.length;
-  const averageRating =
-    totalReviews > 0
-      ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / totalReviews
-      : 0;
+  const totalReviews = await Review.countDocuments({ restaurant: id });
 
   const ratingDistribution = {
-    1: reviews.filter((r) => (r.rating || 0) === 1).length,
-    2: reviews.filter((r) => (r.rating || 0) === 2).length,
-    3: reviews.filter((r) => (r.rating || 0) === 3).length,
-    4: reviews.filter((r) => (r.rating || 0) === 4).length,
-    5: reviews.filter((r) => (r.rating || 0) === 5).length,
+    1: await Review.countDocuments({ restaurant: id, rating: 1 }),
+    2: await Review.countDocuments({ restaurant: id, rating: 2 }),
+    3: await Review.countDocuments({ restaurant: id, rating: 3 }),
+    4: await Review.countDocuments({ restaurant: id, rating: 4 }),
+    5: await Review.countDocuments({ restaurant: id, rating: 5 }),
   };
+
+  const averageRating =
+    totalReviews > 0
+      ? await Review.aggregate([
+          { $match: { restaurant: restaurant._id } },
+          { $group: { _id: null, avg: { $avg: "$rating" } } },
+        ])
+      : [{ avg: 0 }];
+
+  const analysis = await analyzeReviewsWithAI(allReviews);
 
   res.status(200).json({
     status: "success",
@@ -610,14 +616,21 @@ exports.getReviewAnalysis = catchAsyncErrors(async (req, res, next) => {
       restaurant: {
         _id: restaurant._id,
         name: restaurant.name,
+        rating: restaurant.rating,
       },
       stats: {
         totalReviews,
-        averageRating: averageRating.toFixed(1),
+        averageRating: averageRating[0]?.avg?.toFixed(1) || 0,
         ratingDistribution,
       },
       aiAnalysis: analysis,
-      recentReviews: reviews.slice(0, 5),
+      reviews: {
+        data: paginatedReviews,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: totalReviews,
+        pages: Math.ceil(totalReviews / parseInt(limit)),
+      },
     },
   });
 });
