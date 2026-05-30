@@ -21,9 +21,11 @@ import {
   CheckIcon,
   PhotoIcon,
   ArrowPathIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import toast from "react-hot-toast";
+import axiosInstance from "../../lib/axios";
 
 const CreateMenuPage = () => {
   const { id } = useParams();
@@ -62,6 +64,7 @@ const CreateMenuPage = () => {
   });
   const [imagePreviews, setImagePreviews] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
   // Fetch data
   useEffect(() => {
@@ -339,6 +342,47 @@ const CreateMenuPage = () => {
   const removeFoodImage = (index) => {
     setImageFiles(imageFiles.filter((_, i) => i !== index));
     setImagePreviews(imagePreviews.filter((_, i) => i !== index));
+  };
+
+  const generateAIDescription = async () => {
+    if (!newFoodItem.name.trim()) {
+      toast.error("Please enter dish name first");
+      return;
+    }
+
+    setIsGeneratingAI(true);
+    const loadingToast = toast.loading(
+      "AI is crafting a delicious description...",
+    );
+
+    try {
+      const { data } = await axiosInstance.post(
+        "/v1/food/generate-description",
+        {
+          name: newFoodItem.name,
+          category: selectedCategoryForFood || "Main Course",
+          spiceLevel: "Medium",
+          price: newFoodItem.price,
+        },
+      );
+
+      if (data.success && data.data) {
+        setNewFoodItem((prev) => ({
+          ...prev,
+          description: data.data.description,
+        }));
+        toast.dismiss(loadingToast);
+        toast.success("AI description generated!");
+      }
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      console.error("AI generation failed:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to generate description",
+      );
+    } finally {
+      setIsGeneratingAI(false);
+    }
   };
 
   const handleCreateFoodItem = async () => {
@@ -793,9 +837,24 @@ const CreateMenuPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Description
+                    </label>
+                    <button
+                      type="button"
+                      onClick={generateAIDescription}
+                      disabled={isGeneratingAI || !newFoodItem.name.trim()}
+                      className="flex items-center gap-1 px-2 py-1 text-xs bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors disabled:opacity-50"
+                    >
+                      {isGeneratingAI ? (
+                        <div className="w-3 h-3 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <SparklesIcon className="w-3 h-3" />
+                      )}
+                      <span>Generate with AI</span>
+                    </button>
+                  </div>
                   <textarea
                     name="description"
                     rows="2"

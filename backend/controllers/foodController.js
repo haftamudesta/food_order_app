@@ -3,7 +3,7 @@ const AppError = require("../utils/errorHandler");
 const FoodItem = require("../models/foodItem");
 const Menu = require("../models/menu");
 const { cloudinary, uploadToCloudinary } = require("../config/cloudinary");
-const { generateDishDescription } = require("../services/aiService");
+const { generateDishDescription } = require("../services/aiServices");
 
 const generateSlug = (name, restaurantId) => {
   const baseSlug = name

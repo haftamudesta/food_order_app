@@ -11,7 +11,9 @@ import {
   PlusIcon,
   MinusIcon,
   ShoppingBagIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/solid";
+import axiosInstance from "@/lib/axios";
 
 const FoodItemCard = ({ item }) => {
   const dispatch = useDispatch();
@@ -20,6 +22,9 @@ const FoodItemCard = ({ item }) => {
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiDescription, setAiDescription] = useState(item.description || "");
+  const [showAiDescription, setShowAiDescription] = useState(false);
 
   const { restaurant: cartRestaurant, items: cartItems } = useSelector(
     (state) => state.cart,
@@ -51,7 +56,6 @@ const FoodItemCard = ({ item }) => {
       return;
     }
 
-    // If same restaurant or empty cart, add directly
     await addItemToCart();
   };
 
@@ -88,10 +92,8 @@ const FoodItemCard = ({ item }) => {
     const loadingToast = toast.loading("Clearing cart and adding item...");
 
     try {
-      // First clear the cart
       await dispatch(clearCart()).unwrap();
 
-      // Then add the new item
       await dispatch(
         addToCart({
           foodItemId: item._id,
@@ -112,6 +114,40 @@ const FoodItemCard = ({ item }) => {
       console.error("Failed to clear cart and add:", error);
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const generateAIDescription = async () => {
+    setIsGeneratingAI(true);
+    const loadingToast = toast.loading(
+      "AI is crafting a delicious description...",
+    );
+
+    try {
+      const { data } = await axiosInstance.post(
+        "/v1/food/generate-description",
+        {
+          name: item.name,
+          category: item.category || "Main Course",
+          spiceLevel: item.spiceLevel || "Medium",
+          price: item.price,
+        },
+      );
+
+      if (data.success && data.data) {
+        setAiDescription(data.data.description);
+        setShowAiDescription(true);
+        toast.dismiss(loadingToast);
+        toast.success("AI description generated!");
+      }
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      console.error("AI generation failed:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to generate description",
+      );
+    } finally {
+      setIsGeneratingAI(false);
     }
   };
 
@@ -180,9 +216,35 @@ const FoodItemCard = ({ item }) => {
               )}
             </div>
 
-            <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-              {item.description}
-            </p>
+            {/* Description with AI Generator */}
+            <div className="mt-2">
+              <div className="flex justify-between items-start gap-2">
+                <p className="text-sm text-gray-600 line-clamp-2 flex-1">
+                  {showAiDescription ? aiDescription : item.description}
+                </p>
+                <button
+                  onClick={generateAIDescription}
+                  disabled={isGeneratingAI}
+                  className="flex-shrink-0 flex items-center gap-1 px-2 py-1 text-xs bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors disabled:opacity-50"
+                  title="Generate AI description"
+                >
+                  {isGeneratingAI ? (
+                    <div className="w-3 h-3 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <SparklesIcon className="w-3 h-3" />
+                  )}
+                  <span>AI Describe</span>
+                </button>
+              </div>
+              {showAiDescription && aiDescription !== item.description && (
+                <button
+                  onClick={() => setShowAiDescription(false)}
+                  className="text-xs text-gray-400 hover:text-gray-600 mt-1"
+                >
+                  Show original description
+                </button>
+              )}
+            </div>
 
             <div className="mt-3 flex flex-wrap gap-2">
               {item.dietaryInfo?.isVeg && (
