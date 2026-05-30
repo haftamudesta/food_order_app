@@ -7,6 +7,7 @@ const { uploadMultiple } = require("../config/cloudinary");
 router.get("/search", restaurantController.searchRestaurants);
 router.get("/featured", restaurantController.getFeaturedRestaurants);
 router.get("/", restaurantController.getAllRestaurants);
+router.get("/:id/reviews/analysis", restaurantController.getReviewAnalysis);
 
 router.get("/my-restaurants", protect, restaurantController.getMyRestaurants);
 
