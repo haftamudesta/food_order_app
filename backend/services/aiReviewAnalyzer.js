@@ -17,20 +17,23 @@ exports.analyzeReviewsWithAI = async (reviews) => {
   if (!reviews || reviews.length === 0) {
     return {
       sentiment: "neutral",
-      summaryBullets: ["No reviews available yet"],
+      summaryBullets: ["Be the first to review this restaurant!"],
       topMentions: [],
     };
   }
 
   try {
     const reviewTexts = reviews
-      .map((r) => r.comment || r.text || "")
-      .filter((t) => t.trim());
+      .map((r) => r.comment)
+      .filter((t) => t && t.trim());
 
     if (reviewTexts.length === 0) {
       return {
         sentiment: "neutral",
-        summaryBullets: ["No review text available"],
+        summaryBullets: [
+          "No text reviews available",
+          "Check back later for insights",
+        ],
         topMentions: [],
       };
     }
@@ -50,7 +53,7 @@ Rules:
 - topMentions should be the most frequently mentioned words/topics (max 5)
 
 Reviews:
-${reviewTexts.join("\n---\n")}
+${reviewTexts.map((text, i) => `${i + 1}. ${text}`).join("\n")}
 `;
 
     const response = await axios.post(
@@ -70,7 +73,6 @@ ${reviewTexts.join("\n---\n")}
     );
 
     const content = response.data.choices[0].message.content;
-    // Clean the response (remove any markdown code blocks)
     let cleanContent = content
       .replace(/```json\n?/g, "")
       .replace(/```\n?/g, "");
@@ -92,63 +94,18 @@ ${reviewTexts.join("\n---\n")}
       error.response?.data || error.message,
     );
 
+    const avgRating =
+      reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length;
+    let sentiment = "mixed";
+    if (avgRating >= 4) sentiment = "positive";
+    else if (avgRating <= 2) sentiment = "negative";
+
     return {
-      sentiment: "mixed",
-      summaryBullets: ["Unable to analyze reviews at this time"],
+      sentiment: sentiment,
+      summaryBullets: [
+        `Average rating: ${avgRating.toFixed(1)}/5 from ${reviews.length} reviews`,
+      ],
       topMentions: [],
-    };
-  }
-};
-
-exports.analyzeSingleReview = async (reviewText) => {
-  if (!reviewText || !reviewText.trim()) {
-    return {
-      sentiment: "neutral",
-      rating: 3,
-      keyPhrases: [],
-    };
-  }
-
-  try {
-    const prompt = `
-Analyze this restaurant review and return ONLY valid JSON:
-
-{
-  "sentiment": "positive" | "negative" | "neutral",
-  "rating": 1-5,
-  "keyPhrases": ["phrase1", "phrase2"]
-}
-
-Review: "${reviewText}"
-`;
-
-    const response = await axios.post(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        model: "llama3-8b-8192",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
-        max_tokens: 200,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-      },
-    );
-
-    const content = response.data.choices[0].message.content;
-    let cleanContent = content
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "");
-    return JSON.parse(cleanContent);
-  } catch (error) {
-    console.error("Single review analysis error:", error.message);
-    return {
-      sentiment: "neutral",
-      rating: 3,
-      keyPhrases: [],
     };
   }
 };
