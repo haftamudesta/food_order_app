@@ -1,10 +1,11 @@
 const Restaurant = require("../models/restaurant");
 const Menu = require("../models/menu");
-const Review = require("../models/Review");
+const Review = require("../models/review");
 const AppError = require("../utils/errorHandler");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const APIFeatures = require("../utils/apiFeatures");
 const { cloudinary, uploadToCloudinary } = require("../config/cloudinary");
+const { analyzeReviewsWithAI } = require("../services/aiReviewAnalyzer");
 
 exports.createRestaurant = catchAsyncErrors(async (req, res, next) => {
   req.body.owner = req.user.id;
@@ -564,6 +565,59 @@ exports.getFeaturedRestaurants = catchAsyncErrors(async (req, res, next) => {
     results: restaurants.length,
     data: {
       restaurants,
+    },
+  });
+});
+
+exports.getReviewAnalysis = catchAsyncErrors(async (req, res, next) => {
+  const restaurant = await Restaurant.findById(req.params.id).populate({
+    path: "reviews",
+    select: "comment rating createdAt",
+    populate: {
+      path: "user",
+      select: "name",
+    },
+    options: { limit: 50, sort: "-createdAt" },
+  });
+
+  if (!restaurant) {
+    return next(new AppError("No restaurant found with that ID", 404));
+  }
+
+  // Get reviews (only the comments)
+  const reviews = restaurant.reviews || [];
+
+  // Analyze with AI
+  const analysis = await analyzeReviewsWithAI(reviews);
+
+  const totalReviews = reviews.length;
+  const averageRating =
+    totalReviews > 0
+      ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / totalReviews
+      : 0;
+
+  const ratingDistribution = {
+    1: reviews.filter((r) => (r.rating || 0) === 1).length,
+    2: reviews.filter((r) => (r.rating || 0) === 2).length,
+    3: reviews.filter((r) => (r.rating || 0) === 3).length,
+    4: reviews.filter((r) => (r.rating || 0) === 4).length,
+    5: reviews.filter((r) => (r.rating || 0) === 5).length,
+  };
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      restaurant: {
+        _id: restaurant._id,
+        name: restaurant.name,
+      },
+      stats: {
+        totalReviews,
+        averageRating: averageRating.toFixed(1),
+        ratingDistribution,
+      },
+      aiAnalysis: analysis,
+      recentReviews: reviews.slice(0, 5),
     },
   });
 });
