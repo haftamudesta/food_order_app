@@ -1,10 +1,11 @@
 const Restaurant = require("../models/restaurant");
 const Menu = require("../models/menu");
-const Review = require("../models/Review");
+const Review = require("../models/review");
 const AppError = require("../utils/errorHandler");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const APIFeatures = require("../utils/apiFeatures");
 const { cloudinary, uploadToCloudinary } = require("../config/cloudinary");
+const { analyzeReviewsWithAI } = require("../services/aiReviewAnalyzer");
 
 exports.createRestaurant = catchAsyncErrors(async (req, res, next) => {
   req.body.owner = req.user.id;
@@ -125,7 +126,7 @@ exports.getRestaurant = catchAsyncErrors(async (req, res, next) => {
       path: "user",
       select: "name",
     },
-    options: { limit: 5, sort: "-createdAt" },
+    options: { limit: 10, sort: "-createdAt" },
   });
 
   if (!restaurant || !restaurant.isActive) {
@@ -564,6 +565,72 @@ exports.getFeaturedRestaurants = catchAsyncErrors(async (req, res, next) => {
     results: restaurants.length,
     data: {
       restaurants,
+    },
+  });
+});
+
+exports.getReviewAnalysis = catchAsyncErrors(async (req, res, next) => {
+  const { id } = req.params;
+  const { page = 1, limit = 10 } = req.query;
+
+  const restaurant = await Restaurant.findById(id);
+  if (!restaurant) {
+    return next(new AppError("No restaurant found with that ID", 404));
+  }
+
+  const allReviews = await Review.find({ restaurant: id })
+    .sort("-createdAt")
+    .limit(50)
+    .select("comment rating");
+
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const paginatedReviews = await Review.find({ restaurant: id })
+    .populate("user", "name")
+    .sort("-createdAt")
+    .skip(skip)
+    .limit(parseInt(limit));
+
+  const totalReviews = await Review.countDocuments({ restaurant: id });
+
+  const ratingDistribution = {
+    1: await Review.countDocuments({ restaurant: id, rating: 1 }),
+    2: await Review.countDocuments({ restaurant: id, rating: 2 }),
+    3: await Review.countDocuments({ restaurant: id, rating: 3 }),
+    4: await Review.countDocuments({ restaurant: id, rating: 4 }),
+    5: await Review.countDocuments({ restaurant: id, rating: 5 }),
+  };
+
+  const averageRating =
+    totalReviews > 0
+      ? await Review.aggregate([
+          { $match: { restaurant: restaurant._id } },
+          { $group: { _id: null, avg: { $avg: "$rating" } } },
+        ])
+      : [{ avg: 0 }];
+
+  const analysis = await analyzeReviewsWithAI(allReviews);
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      restaurant: {
+        _id: restaurant._id,
+        name: restaurant.name,
+        rating: restaurant.rating,
+      },
+      stats: {
+        totalReviews,
+        averageRating: averageRating[0]?.avg?.toFixed(1) || 0,
+        ratingDistribution,
+      },
+      aiAnalysis: analysis,
+      reviews: {
+        data: paginatedReviews,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: totalReviews,
+        pages: Math.ceil(totalReviews / parseInt(limit)),
+      },
     },
   });
 });

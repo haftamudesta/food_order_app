@@ -8,6 +8,14 @@ router.get("/search", restaurantController.searchRestaurants);
 router.get("/featured", restaurantController.getFeaturedRestaurants);
 router.get("/", restaurantController.getAllRestaurants);
 
+router.get("/:id/reviews/analysis", restaurantController.getReviewAnalysis);
+
+router.get("/:id", restaurantController.getRestaurant);
+router.get("/:id/hours", restaurantController.getOperatingHours);
+router.get("/:id/is-open", restaurantController.checkIsOpen);
+router.get("/:id/stats", restaurantController.getRestaurantStats);
+
+// Owner/Admin routes
 router.get("/my-restaurants", protect, restaurantController.getMyRestaurants);
 
 router.post(
@@ -24,6 +32,7 @@ router.patch(
   restaurantController.updateRestaurant,
 );
 
+// Soft delete restaurant
 router.delete("/:id", protect, restaurantController.deleteRestaurant);
 
 router.patch(
@@ -44,9 +53,10 @@ router.patch(
   restaurantController.setPrimaryImage,
 );
 
-router.get("/:id", restaurantController.getRestaurant);
-router.get("/:id/hours", restaurantController.getOperatingHours);
-router.get("/:id/is-open", restaurantController.checkIsOpen);
-router.get("/:id/stats", restaurantController.getRestaurantStats);
+router.delete(
+  "/:id/permanent",
+  protect,
+  restaurantController.permanentDeleteRestaurant,
+);
 
 module.exports = router;
