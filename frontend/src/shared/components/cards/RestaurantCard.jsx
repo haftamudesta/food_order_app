@@ -7,6 +7,7 @@ import {
   ClockIcon,
 } from "@heroicons/react/24/solid";
 import { StarIcon as StarOutlineIcon } from "@heroicons/react/24/outline";
+import RestaurantReviewAnalysis from "../restaurant/RestaurantReviewAnalysis";
 
 const RestaurantCard = ({ restaurant }) => {
   const { _id, name, description, cuisine, rating, images, pricing, address } =
