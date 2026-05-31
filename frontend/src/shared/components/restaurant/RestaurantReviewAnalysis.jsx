@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axiosInstance from "../../lib/axios";
+import axiosInstance from "../../../lib/axios";
 import {
   StarIcon,
   ChatBubbleLeftRightIcon,
@@ -7,7 +7,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
-import LoadingSpinner from "../ui/LoadingSpinner";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 const RestaurantReviewAnalysis = ({ restaurantId }) => {
   const [analysis, setAnalysis] = useState(null);
