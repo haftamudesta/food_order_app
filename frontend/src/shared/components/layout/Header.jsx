@@ -136,8 +136,10 @@ const Header = () => {
 
   const navLinks = [
     { to: "/", label: "Home" },
-    { to: "/restaurants", label: "Restaurants" },
-    { to: "/about", label: "About" },
+    {
+      to: "/restaurants",
+      label: "Restaurants",
+    },
   ];
 
   const getInitials = (name) => {
