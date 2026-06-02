@@ -186,7 +186,7 @@ const Header = () => {
           ${
             isScrolled
               ? "bg-white shadow-lg"
-              : "bg-gradient-to-r from-orange-600 to-orange-700"
+              : "bg-linear-to-r from-orange-600 to-orange-700"
           }
         `}
       >
